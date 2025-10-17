@@ -24,302 +24,237 @@
                 padding: 0;
             }
             /* Ensure text is black for clarity */
-            .text-gray-700, .text-gray-500 {
+            .text-gray-700, .text-gray-900 {
                 color: #000 !important;
             }
         }
-
         /* Inter font for a clean, modern look */
         body {
             font-family: "Inter", sans-serif;
+            background-color: #f7f9fb;
         }
-
-        /* Style for the Print button */
-        .print-button {
-            transition: all 0.15s ease-in-out;
-        }
-        .print-button:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
-        }
-        /* Custom focus state */
-        .print-button:focus {
-            outline: 2px solid #10B981;
-            outline-offset: 2px;
+        .invoice-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 0px 10px -5px rgba(0, 0, 0, 0.04);
+            padding: 2.5rem;
+            border: 1px solid #e5e7eb;
         }
     </style>
-    <script>
-        // Data structure for quick price lookup (from your policy)
-        const RATES = {
-            '30': 15.00,
-            '60': 30.00,
-            '90': 50.00,
-            'intro': 10.00
-        };
-
-        // Data structure for travel fees (from your policy)
-        const TRAVEL_FEES = {
-            '0': 0.00,
-            '5': 5.00, // 5 Miles +
-            '10': 10.00, // 10 Miles +
-            '15': 20.00 // 15 Miles + (using the £20 minimum)
-        };
-
-        // Bank details from Step 6 (Finalized)
-        const BANK_DETAILS = {
-            name: "Elliot Wardill",
-            sortCode: "56-00-36",
-            accountNumber: "40013987",
-            reference: "[CLIENT SURNAME] - LESSON"
-        };
-
-
-        // --- Core Invoice Generation Logic ---
-
-        function calculateTotal() {
-            const lessonType = document.getElementById('lessonType').value;
-            const lessonCount = parseInt(document.getElementById('lessonCount').value) || 0;
-            const travelDistance = document.getElementById('travelDistance').value;
-            const customFee = parseFloat(document.getElementById('customFee').value) || 0;
-            
-            // Get base lesson price
-            const baseRate = RATES[lessonType] || 0;
-            
-            // Calculate lesson subtotal
-            let lessonSubtotal = baseRate * lessonCount;
-
-            // Get travel fee
-            const travelFee = TRAVEL_FEES[travelDistance] || 0;
-
-            // Calculate grand total
-            const grandTotal = lessonSubtotal + travelFee + customFee;
-
-            // Update display fields
-            document.getElementById('lessonSubtotal').innerText = '£' + lessonSubtotal.toFixed(2);
-            document.getElementById('travelFeeDisplay').innerText = '£' + travelFee.toFixed(2);
-            document.getElementById('customFeeDisplay').innerText = '£' + customFee.toFixed(2);
-            document.getElementById('grandTotalDisplay').innerText = '£' + grandTotal.toFixed(2);
-            
-            // Update quantity display
-            const lessonTypeText = document.querySelector(`#lessonType option[value="${lessonType}"]`).text;
-            document.getElementById('lessonDescription').innerHTML = `${lessonTypeText} x ${lessonCount}`;
-            document.getElementById('invoiceQuantity').innerText = lessonCount;
-        }
-
-        function generateInvoice() {
-            // 1. Update static fields
-            document.getElementById('invoiceDate').innerText = new Date().toLocaleDateString('en-GB', { 
-                day: '2-digit', 
-                month: 'long', 
-                year: 'numeric' 
-            });
-            document.getElementById('invoiceNumber').innerText = Math.floor(Math.random() * 9000) + 1000;
-            document.getElementById('lessonDescription').innerText = document.querySelector(`#lessonType option[value="${document.getElementById('lessonType').value}"]`).text;
-            
-            // 2. Client Details (Sanitize input for display)
-            const clientName = document.getElementById('clientName').value.trim() || 'Client Name';
-            document.getElementById('invoiceClientName').innerText = clientName;
-
-            // 3. Populate Bank Details
-            document.getElementById('bankName').innerText = BANK_DETAILS.name;
-            document.getElementById('bankSortCode').innerText = BANK_DETAILS.sortCode;
-            document.getElementById('bankAccountNumber').innerText = BANK_DETAILS.accountNumber;
-            document.getElementById('bankReference').innerText = BANK_DETAILS.reference.replace('[CLIENT SURNAME]', clientName.split(' ').pop() || 'LESSON');
-            
-            // 4. Calculate final totals (redundant but safe)
-            calculateTotal();
-
-            // 5. Trigger Print Dialog
-            window.print();
-        }
-
-        // Initialize bank details on load
-        window.onload = function() {
-            calculateTotal(); // Initial calculation
-            document.querySelectorAll('input, select').forEach(element => {
-                element.addEventListener('input', calculateTotal);
-            });
-        };
-    </script>
 </head>
-<body class="bg-gray-100 p-4 sm:p-8 min-h-screen">
-    <div class="max-w-4xl mx-auto">
-        
-        <!-- Controls and Print Button (No-Print Section) -->
-        <div class="no-print bg-white p-6 rounded-xl shadow-lg mb-8">
-            <h2 class="text-xl font-bold text-gray-800 mb-4">Invoice Controls</h2>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <!-- Client Name -->
-                <div>
-                    <label for="clientName" class="block text-sm font-medium text-gray-700">Client Name</label>
-                    <input type="text" id="clientName" value="Mrs. Smith" placeholder="Client Name" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border">
-                </div>
-                
-                <!-- Lesson Type -->
-                <div>
-                    <label for="lessonType" class="block text-sm font-medium text-gray-700">Lesson Type</label>
-                    <select id="lessonType" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border">
-                        <option value="60">60 Min Lesson (£30)</option>
-                        <option value="30">30 Min Lesson (£15)</option>
-                        <option value="90">90 Min Lesson (£50)</option>
-                        <option value="intro">Introductory Lesson (£10)</option>
-                    </select>
+<body>
+
+<div class="invoice-container" id="invoice-document">
+
+    <!-- Invoice Header -->
+    <header class="flex justify-between items-center pb-6 border-b border-indigo-200">
+        <div>
+            <h1 class="text-3xl font-extrabold text-indigo-700">INVOICE</h1>
+            <div class="mt-2 flex items-center space-x-2 text-sm text-gray-500">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span id="invoice-date">October 17, 2025</span>
+            </div>
+        </div>
+        <div class="text-right">
+            <h2 class="text-xl font-semibold text-gray-900">Elliot Wardill Mobile Music Lessons</h2>
+            <p class="text-sm text-gray-600">Pudsey, UK</p>
+            <p class="text-sm text-gray-600">Email: elliotmobilemusic@gmail.com</p>
+            <p class="text-sm text-gray-600">Phone: 07368 975144</p>
+        </div>
+    </header>
+
+    <!-- Client and Invoice Details -->
+    <section class="py-6 border-b border-gray-100 grid grid-cols-2 gap-4 text-sm">
+        <div>
+            <h3 class="font-semibold text-gray-700 mb-2">BILL TO:</h3>
+            <input id="client-name" type="text" placeholder="Client Name" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 mb-1">
+            <input id="client-address" type="text" placeholder="Address, Postcode" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+        </div>
+        <div class="text-right">
+            <h3 class="font-semibold text-gray-700 mb-2">INVOICE NO:</h3>
+            <input id="invoice-number" type="text" value="EW-" class="w-32 p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-right">
+            <p class="mt-3 text-gray-500">DUE DATE: <input id="due-date" type="date" class="border border-gray-300 rounded-lg p-1"></p>
+        </div>
+    </section>
+
+    <!-- Line Items Table -->
+    <section class="mt-8">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-indigo-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/3">Description (Lesson Type / Date)</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">Qty (Mins/Hours)</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">Unit Price (£)</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">Amount (£)</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200" id="item-list">
+                <!-- Template Item (Initial Lesson) -->
+                <tr class="item-row">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <input type="text" value="Introductory Lesson (60 Mins)" class="w-full p-1 border-b border-gray-300 focus:border-indigo-500">
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500">
+                        <input type="number" value="1" min="1" class="item-qty w-16 p-1 text-right border-b border-gray-300" oninput="calculateTotal()">
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500">
+                        <input type="number" value="10.00" min="0" step="0.01" class="item-price w-20 p-1 text-right border-b border-gray-300" oninput="calculateTotal()">
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-gray-900 total-amount">10.00</td>
+                    <td class="px-2 py-4 no-print">
+                        <button onclick="removeItem(this)" class="text-red-500 hover:text-red-700 transition duration-150">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Add Item Button -->
+        <div class="no-print mt-4 flex justify-between">
+            <button onclick="addItem()" class="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition duration-150 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                </svg>
+                Add Lesson
+            </button>
+        </div>
+    </section>
+
+    <!-- Totals Section -->
+    <section class="mt-8 flex justify-end">
+        <div class="w-full md:w-1/2">
+            <div class="space-y-2">
+                <div class="flex justify-between items-center text-sm font-medium text-gray-700">
+                    <span>Subtotal:</span>
+                    <span id="subtotal" class="font-semibold text-gray-900">£0.00</span>
                 </div>
 
-                <!-- Lesson Count -->
-                <div>
-                    <label for="lessonCount" class="block text-sm font-medium text-gray-700">Lessons Billed</label>
-                    <input type="number" id="lessonCount" value="1" min="1" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border">
+                <!-- Travel Fee (Custom Input) -->
+                <div class="flex justify-between items-center text-sm font-medium text-gray-700 py-2 border-t border-gray-100">
+                    <div class="flex flex-col text-left">
+                        <label for="travel-fee" class="text-sm font-semibold">Travel Fee (Postcode Zone)</label>
+                        <span class="text-xs text-indigo-500 mt-1">Check policy for 5, 10, 15+ mile rates.</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span>£</span>
+                        <input id="travel-fee" type="number" value="0.00" min="0" step="5.00" class="w-20 p-1 text-right border border-gray-300 rounded-lg" oninput="calculateTotal()">
+                    </div>
                 </div>
-                
-                <!-- Travel Distance -->
-                <div>
-                    <label for="travelDistance" class="block text-sm font-medium text-gray-700">Travel Fee (Miles+)</label>
-                    <select id="travelDistance" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border">
-                        <option value="0">0 Miles (No Fee)</option>
-                        <option value="5">5 Miles + (£5)</option>
-                        <option value="10">10 Miles + (£10)</option>
-                        <option value="15">15 Miles + (£20)</option>
-                    </select>
-                </div>
-                
-                <!-- Custom Fee -->
-                <div class="md:col-span-2 lg:col-span-1">
-                    <label for="customFee" class="block text-sm font-medium text-gray-700">Custom Fee (e.g., resources)</label>
-                    <input type="number" id="customFee" value="0.00" min="0" step="0.01" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border">
+
+                <!-- Grand Total -->
+                <div class="flex justify-between items-center text-lg font-bold text-gray-800 pt-4 border-t-4 border-indigo-500">
+                    <span>GRAND TOTAL DUE:</span>
+                    <span id="grand-total" class="text-indigo-700">£0.00</span>
                 </div>
             </div>
-            
-            <div class="flex justify-end">
-                <button onclick="generateInvoice()" class="print-button px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-700 transition duration-150 ease-in-out">
-                    Generate & Print/Save PDF
+        </div>
+    </section>
+
+    <!-- Notes and Payment Details -->
+    <section class="mt-12 pt-6 border-t border-gray-200 grid md:grid-cols-2 gap-8 text-sm">
+        <div>
+            <h3 class="font-semibold text-gray-700 mb-2">NOTES:</h3>
+            <textarea id="invoice-notes" rows="3" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g., Payment due upon receipt. Next lesson booked for..."></textarea>
+            <p class="mt-4 text-xs text-gray-500">Thank you for choosing Elliot Wardill Mobile Music Lessons!</p>
+        </div>
+        <div>
+            <h3 class="font-semibold text-gray-700 mb-2">PAYMENT DETAILS (Bank Transfer):</h3>
+            <p class="text-gray-600">**Payment is preferred via Bank Transfer**</p>
+            <!-- >>>>> EDIT THIS SECTION WITH YOUR BANK DETAILS IN GITHUB <<<<< -->
+            <p class="text-gray-900 font-medium mt-2">Account Name: Elliot Wardill</p>
+            <p class="text-gray-900 font-medium">Sort Code: 56-00-36</p>
+            <p class="text-gray-900 font-medium">Account No: 40013987</p>
+            <!-- >>>>> END OF BANK DETAILS SECTION <<<<< -->
+        </div>
+    </section>
+</div>
+
+<!-- Control Buttons (No Print) -->
+<div class="no-print text-center py-6">
+    <button onclick="window.print()" class="px-8 py-3 bg-indigo-700 text-white font-bold rounded-lg shadow-lg hover:bg-indigo-800 transition duration-150">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm1-9V3a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1v-2h-2z" />
+        </svg>
+        Print / Save as PDF
+    </button>
+</div>
+
+<script>
+    // Set initial date and invoice number
+    window.onload = function() {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('invoice-date').textContent = new Date().toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
+        document.getElementById('due-date').value = today; // Default due date is today
+        document.getElementById('invoice-number').value = "EW-" + Math.floor(Math.random() * 90000 + 10000); // Simple random starting number
+        calculateTotal();
+    };
+
+    // Adds a new blank line item row to the invoice
+    function addItem() {
+        const list = document.getElementById('item-list');
+        const newRow = document.createElement('tr');
+        newRow.className = 'item-row';
+        newRow.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                <input type="text" value="Standard Lesson (60 Mins)" class="w-full p-1 border-b border-gray-300 focus:border-indigo-500">
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500">
+                <input type="number" value="1" min="1" class="item-qty w-16 p-1 text-right border-b border-gray-300" oninput="calculateTotal()">
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500">
+                <input type="number" value="30.00" min="0" step="0.01" class="item-price w-20 p-1 text-right border-b border-gray-300" oninput="calculateTotal()">
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-gray-900 total-amount">30.00</td>
+            <td class="px-2 py-4 no-print">
+                <button onclick="removeItem(this)" class="text-red-500 hover:text-red-700 transition duration-150">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1z" clip-rule="evenodd" />
+                    </svg>
                 </button>
-            </div>
-        </div>
+            </td>
+        `;
+        list.appendChild(newRow);
+        calculateTotal();
+    }
 
-        <!-- INVOICE SECTION (Printable) -->
-        <div id="invoice" class="invoice-container bg-white p-6 sm:p-10 rounded-xl shadow-2xl border border-gray-200">
-            
-            <!-- Header -->
-            <header class="flex justify-between items-start border-b pb-4 mb-6">
-                <div>
-                    <h1 class="text-3xl font-extrabold text-indigo-700">INVOICE</h1>
-                    <p class="text-sm text-gray-500 mt-1">
-                        Invoice #<span id="invoiceNumber">1001</span><br>
-                        Date: <span id="invoiceDate">17 October 2025</span>
-                    </p>
-                </div>
-                <div class="text-right">
-                    <h2 class="text-xl font-semibold text-gray-800">Elliot Wardill Mobile Music</h2>
-                    <p class="text-sm text-gray-700">
-                        Pudsey, Leeds, UK<br>
-                        Phone: 07368 975144<br>
-                        Email: elliotmobilemusic@gmail.com
-                    </p>
-                </div>
-            </header>
+    // Removes a line item row
+    function removeItem(button) {
+        const row = button.closest('.item-row');
+        row.remove();
+        calculateTotal();
+    }
 
-            <!-- Bill To & Summary -->
-            <section class="flex justify-between items-start mb-8">
-                <div>
-                    <h3 class="text-md font-bold text-gray-700 mb-1">Billed To:</h3>
-                    <p id="invoiceClientName" class="text-lg font-medium text-gray-800">Client Name</p>
-                    <p class="text-sm text-gray-500">For services rendered by Elliot Wardill.</p>
-                </div>
-                <div class="text-right">
-                    <h3 class="text-md font-bold text-gray-700 mb-1">Invoice Total:</h3>
-                    <p id="grandTotalDisplay" class="text-3xl font-extrabold text-indigo-600">£30.00</p>
-                    <p class="text-sm text-gray-500 mt-1">Due Upon Receipt</p>
-                </div>
-            </section>
+    // Calculates all totals on the invoice
+    function calculateTotal() {
+        const rows = document.querySelectorAll('.item-row');
+        let subtotal = 0;
 
-            <!-- Line Items Table -->
-            <section class="mb-8">
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead>
-                            <tr class="bg-gray-50">
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tl-lg">Description</th>
-                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
-                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Rate</th>
-                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tr-lg">Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200 text-gray-700">
-                            <!-- Lesson Item -->
-                            <tr>
-                                <td class="px-4 py-3 whitespace-nowrap">
-                                    <span id="lessonDescription">60 Min Lesson x 1</span>
-                                </td>
-                                <td id="invoiceQuantity" class="px-4 py-3 whitespace-nowrap text-right">1</td>
-                                <td class="px-4 py-3 whitespace-nowrap text-right">£30.00</td>
-                                <td id="lessonSubtotal" class="px-4 py-3 whitespace-nowrap text-right font-medium">£30.00</td>
-                            </tr>
-                            <!-- Travel Item -->
-                            <tr>
-                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">Travel Fee (as per policy)</td>
-                                <td class="px-4 py-3 whitespace-nowrap text-right">1</td>
-                                <td class="px-4 py-3 whitespace-nowrap text-right"></td>
-                                <td id="travelFeeDisplay" class="px-4 py-3 whitespace-nowrap text-right">£0.00</td>
-                            </tr>
-                            <!-- Custom Item -->
-                            <tr>
-                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">Custom Fee / Resources</td>
-                                <td class="px-4 py-3 whitespace-nowrap text-right">1</td>
-                                <td class="px-4 py-3 whitespace-nowrap text-right"></td>
-                                <td id="customFeeDisplay" class="px-4 py-3 whitespace-nowrap text-right">£0.00</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+        rows.forEach(row => {
+            const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
+            const price = parseFloat(row.querySelector('.item-price').value) || 0;
+            const total = qty * price;
 
-                <!-- Totals Summary -->
-                <div class="flex justify-end mt-4">
-                    <div class="w-full sm:w-1/2 lg:w-1/3">
-                        <div class="flex justify-between py-2 border-t border-gray-200">
-                            <span class="text-sm font-medium text-gray-600">Subtotal:</span>
-                            <span id="totalBeforeDiscount" class="text-sm font-medium text-gray-600">£30.00</span>
-                        </div>
-                        <div class="flex justify-between pt-3 pb-2 border-t border-indigo-200 bg-indigo-50 rounded-b-lg">
-                            <span class="text-xl font-bold text-indigo-700 px-4">TOTAL DUE (GBP)</span>
-                            <span id="grandTotalDisplayFinal" class="text-xl font-bold text-indigo-700 px-4">£30.00</span>
-                        </div>
-                    </div>
-                </div>
-            </section>
+            row.querySelector('.total-amount').textContent = total.toFixed(2);
+            subtotal += total;
+        });
 
-            <!-- Payment Details & Notes -->
-            <section class="pt-6 border-t border-gray-200">
-                <h3 class="text-lg font-bold text-gray-700 mb-3">Payment Instructions</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Bank Details -->
-                    <div>
-                        <p class="text-sm font-semibold text-gray-800 mb-1">Bank Transfer (BACS)</p>
-                        <ul class="text-sm text-gray-700 space-y-1">
-                            <li>**Account Name:** <span id="bankName">Elliot Wardill</span></li>
-                            <li>**Sort Code:** <span id="bankSortCode">56-00-36</span></li>
-                            <li>**Account No:** <span id="bankAccountNumber">40013987</span></li>
-                        </ul>
-                    </div>
-                    <!-- Reference -->
-                    <div>
-                        <p class="text-sm font-semibold text-gray-800 mb-1">Important Reference</p>
-                        <p class="text-sm text-gray-700">
-                            When making payment, please use the following as the reference to ensure your payment is quickly tracked:
-                        </p>
-                        <p class="text-md font-extrabold text-indigo-600 mt-2">
-                            Reference: <span id="bankReference">[CLIENT SURNAME] - LESSON</span>
-                        </p>
-                    </div>
-                </div>
-                
-                <p class="text-sm text-gray-500 mt-6 pt-4 border-t text-center">
-                    Thank you for your business. For full policy details, please visit your welcome email or the policies page on my website.
-                </p>
-            </section>
+        // Get travel fee
+        const travelFee = parseFloat(document.getElementById('travel-fee').value) || 0;
 
-        </div>
-    </div>
+        // Calculate grand total
+        const grandTotal = subtotal + travelFee;
+
+        // Update display fields
+        document.getElementById('subtotal').textContent = '£' + subtotal.toFixed(2);
+        document.getElementById('grand-total').textContent = '£' + grandTotal.toFixed(2);
+    }
+</script>
 </body>
 </html>

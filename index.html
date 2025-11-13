@@ -8,16 +8,18 @@
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
-    /* Print styles */
+    /* Print styles (optimized for Chrome -> Save as PDF) */
     @media print {
       body { background: white; font-size: 10pt; }
       .no-print { display: none !important; }
       .invoice-container { box-shadow: none !important; border: none !important; margin: 0; padding: 0; }
       .text-gray-700, .text-gray-900 { color: #000 !important; }
-      thead { display: table-header-group; } /* ensure headers repeat */
-      /* slightly reduce font size for printing to help fit columns */
-      body, table { font-size: 10pt; }
+      thead { display: table-header-group; } /* ensure header repeats on pages */
+      /* keep the table readable in print */
+      table { width: 100%; border-collapse: collapse; }
       input { border: none !important; box-shadow: none !important; }
+      /* avoid page breaks inside rows */
+      tr { page-break-inside: avoid; }
     }
 
     /* Page background & container */
@@ -53,6 +55,11 @@
       .invoice-container { padding: 1rem; }
       .btn { width: 100%; }
     }
+
+    /* small success / error message style for client manager */
+    .msg { padding: 0.5rem 0.75rem; border-radius: 8px; font-size: 0.9rem; }
+    .msg.success { background: #ecfccb; color: #166534; border: 1px solid #bbf7d0; }
+    .msg.error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
   </style>
 </head>
 <body>
@@ -81,29 +88,35 @@
     </header>
 
     <!-- CLIENT MANAGER (indigo-tinted card) -->
-   <section class="mt-6">
-  <div class="p-4 rounded-lg bg-indigo-50 border border-indigo-100 card">
-    <h3 class="text-sm font-semibold text-indigo-800 mb-3">Client Manager</h3>
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-      <select id="saved-clients" onchange="loadClient()" class="p-3 border border-indigo-200 rounded-lg sm:col-span-2">
-        <option value="">Select Existing Client</option>
-      </select>
-      <button onclick="openClientSavePrompt()" class="btn px-4 py-2 bg-indigo-700 text-white rounded-lg hover:bg-indigo-800">
-        + Save Client
-      </button>
-    </div>
+    <section class="mt-6">
+      <div class="p-4 rounded-lg bg-indigo-50 border border-indigo-100 card">
+        <h3 class="text-sm font-semibold text-indigo-800 mb-3">Client Manager</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <select id="saved-clients" onchange="loadClient()" class="p-3 border border-indigo-100 rounded-lg sm:col-span-2">
+            <option value="">Select Existing Client</option>
+          </select>
+          <div class="flex gap-2 sm:justify-end">
+            <button id="open-save-btn" onclick="openClientSavePrompt()" class="btn px-4 py-2 bg-indigo-700 text-white rounded-lg hover:bg-indigo-800">+ Save Client</button>
+          </div>
+        </div>
 
-    <div id="save-client-confirm" class="hidden mt-4 bg-white p-3 rounded-lg border border-indigo-100">
-      <p class="text-sm text-gray-700 mb-3">Save current client details?</p>
-      <div class="flex gap-2">
-        <button onclick="confirmSaveClient()" class="btn px-4 py-2 bg-indigo-700 text-white rounded-lg">Save</button>
-        <button onclick="cancelSaveClient()" class="btn px-4 py-2 border rounded-lg">Cancel</button>
+        <!-- confirmation area -->
+        <div id="save-client-confirm" class="hidden mt-4 bg-white p-3 rounded-lg border border-indigo-100">
+          <p class="text-sm text-gray-700 mb-3">Save the current client details?</p>
+          <div class="flex gap-2">
+            <button id="confirm-save-btn" onclick="confirmSaveClient()" class="btn px-4 py-2 bg-indigo-700 text-white rounded-lg">Save</button>
+            <button onclick="cancelSaveClient()" class="btn px-4 py-2 border rounded-lg">Cancel</button>
+          </div>
+        </div>
+
+        <!-- feedback message -->
+        <div id="client-msg" class="mt-3" aria-live="polite"></div>
+
+        <div class="mt-3">
+          <button onclick="deleteClient()" class="text-sm text-red-600 hover:text-red-800 no-print">🗑️ Delete Selected Client</button>
+        </div>
       </div>
-    </div>
-
-    <button onclick="deleteClient()" class="mt-3 text-sm text-red-600 hover:text-red-800">🗑️ Delete Selected Client</button>
-  </div>
-</section>
+    </section>
 
     <!-- CLIENT + INVOICE DETAILS (card) -->
     <section class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -118,7 +131,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <input id="invoice-number" type="text" value="EW-" class="p-3 border border-gray-200 rounded-lg text-right focus:ring-2 focus:ring-indigo-200" />
           <div class="p-3 border border-gray-100 rounded-lg bg-indigo-50 text-sm text-gray-700">DUE DATE: <input id="due-date" type="date" class="ml-2 text-sm" /></div>
-          <div class="col-span-2 text-xs text-gray-500 mt-1">Tip: use <span class="font-medium">Add Lesson ▾</span> to add single lessons or generate blocks of lessons.</div>
+          <div class="col-span-2 text-xs text-gray-500 mt-1">Tip: use <span class="font-medium">Add Lesson ▾</span> to add single lessons or generate blocks.</div>
         </div>
       </div>
     </section>
@@ -589,97 +602,127 @@
   };
 </script>
 
-<!-- Firebase module for client saving / loading -->
+<!-- Firebase module for client saving / loading (fixed storageBucket) -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-analytics.js";
   import { getFirestore, collection, addDoc, getDocs, getDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-// ✅ Corrected Firebase Config
-const firebaseConfig = {
-  apiKey: "AIzaSyDZy7Y40rq-itG6AeZcihtIqVjzvfQqNtY",
-  authDomain: "elliotinvoicemanager.firebaseapp.com",
-  projectId: "elliotinvoicemanager",
-  storageBucket: "elliotinvoicemanager.appspot.com", // ✅ FIXED
-  messagingSenderId: "722602611594",
-  appId: "1:722602611594:web:06c8159a236777d1f8ae73",
-  measurementId: "G-R81851NH79"
-};
+  // ✅ Use corrected storageBucket (appspot.com)
+  const firebaseConfig = {
+    apiKey: "AIzaSyDZy7Y40rq-itG6AeZcihtIqVjzvfQqNtY",
+    authDomain: "elliotinvoicemanager.firebaseapp.com",
+    projectId: "elliotinvoicemanager",
+    storageBucket: "elliotinvoicemanager.appspot.com",
+    messagingSenderId: "722602611594",
+    appId: "1:722602611594:web:06c8159a236777d1f8ae73",
+    measurementId: "G-R81851NH79"
+  };
 
   const app = initializeApp(firebaseConfig);
-  // analytics optional
-  try { getAnalytics(app); } catch(e) { /* ignore if not available */ }
+  try { getAnalytics(app); } catch (e) { /* ignore analytics errors in some hosts */ }
   const db = getFirestore(app);
 
-  async function loadClients() {
-    const select = document.getElementById("saved-clients");
-    if (!select) return;
-    select.innerHTML = '<option value="">Select Existing Client</option>';
+  // UI helpers for client-manager flows
+  function showClientMessage(type, text) {
+    const el = document.getElementById('client-msg');
+    el.innerHTML = `<div class="msg ${type === 'success' ? 'success' : 'error'}">${text}</div>`;
+    // dismiss automatically after 4s
+    setTimeout(() => { if (el) el.innerHTML = ''; }, 4000);
+  }
+
+  window.openClientSavePrompt = () => {
+    document.getElementById('save-client-confirm').classList.remove('hidden');
+    document.getElementById('open-save-btn').classList.add('opacity-60');
+  };
+  window.cancelSaveClient = () => {
+    document.getElementById('save-client-confirm').classList.add('hidden');
+    document.getElementById('open-save-btn').classList.remove('opacity-60');
+  };
+
+  window.confirmSaveClient = async () => {
+    const name = document.getElementById("client-name").value.trim();
+    const address = document.getElementById("client-address").value.trim();
+    if (!name) return showClientMessage('error', 'Please enter a client name before saving.');
+
+    try {
+      // write to Firestore
+      await addDoc(collection(db, "clients"), { name, address, createdAt: new Date().toISOString() });
+      showClientMessage('success', `Saved "${name}"`);
+      cancelSaveClient();
+      await loadClients();
+      // auto-select the newly saved client (match by name)
+      const dropdown = document.getElementById("saved-clients");
+      for (const opt of Array.from(dropdown.options)) {
+        if (opt.textContent === name) { dropdown.value = opt.value; break; }
+      }
+    } catch (err) {
+      console.error("Error saving client:", err);
+      showClientMessage('error', 'Error saving client. Check console.');
+    }
+  };
+
+  window.loadClients = async () => {
+    const dropdown = document.getElementById("saved-clients");
+    if (!dropdown) return;
+    dropdown.innerHTML = '<option value="">Select Existing Client</option>';
+
     try {
       const snapshot = await getDocs(collection(db, "clients"));
-      snapshot.forEach((snap) => {
-        const data = snap.data();
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
         const opt = document.createElement("option");
-        opt.value = snap.id;
+        opt.value = docSnap.id;
         opt.textContent = data.name;
-        select.appendChild(opt);
+        dropdown.appendChild(opt);
       });
     } catch (err) {
       console.error("Error loading clients:", err);
+      showClientMessage('error', 'Error loading clients (console).');
     }
-  }
+  };
 
-  async function saveClient() {
-    const name = document.getElementById("client-name").value.trim();
-    const address = document.getElementById("client-address").value.trim();
-    if (!name) return alert("Please enter a client name");
-    try {
-      await addDoc(collection(db, "clients"), { name, address });
-      alert("Client saved!");
-      loadClients();
-    } catch (err) {
-      console.error("Error saving client:", err);
-      alert("Error saving client. Check console.");
-    }
-  }
-
-  async function loadClient() {
+  window.loadClient = async () => {
     const id = document.getElementById("saved-clients").value;
     if (!id) return;
     try {
-      const docRef = doc(db, "clients", id);
-      const snap = await getDoc(docRef);
-      if (snap.exists()) {
-        const data = snap.data();
+      const docSnap = await getDoc(doc(db, "clients", id));
+      if (docSnap.exists()) {
+        const data = docSnap.data();
         document.getElementById("client-name").value = data.name || "";
         document.getElementById("client-address").value = data.address || "";
+        showClientMessage('success', `Loaded "${data.name}"`);
+      } else {
+        showClientMessage('error', 'Selected client not found.');
       }
     } catch (err) {
       console.error("Error loading client:", err);
-      alert("Error loading client. Check console.");
+      showClientMessage('error', 'Error loading client (console).');
     }
-  }
+  };
 
-  async function deleteClient() {
+  window.deleteClient = async () => {
     const id = document.getElementById("saved-clients").value;
-    if (!id) return alert("Select a client first");
+    if (!id) return showClientMessage('error', 'Select a client first');
+    if (!confirm('Delete this client permanently?')) return;
     try {
       await deleteDoc(doc(db, "clients", id));
-      alert("Client deleted");
-      loadClients();
+      showClientMessage('success', 'Client deleted');
+      await loadClients();
+      // clear bill-to fields if deleted client was loaded
+      document.getElementById("client-name").value = '';
+      document.getElementById("client-address").value = '';
     } catch (err) {
       console.error("Error deleting client:", err);
-      alert("Error deleting client. Check console.");
+      showClientMessage('error', 'Error deleting client (console).');
     }
-  }
+  };
 
-  // Expose functions to global scope so onclick handlers in markup work
-  window.loadClients = loadClients;
-  window.saveClient = saveClient;
-  window.loadClient = loadClient;
-  window.deleteClient = deleteClient;
+  // expose confirmSaveClient/cancel for inline buttons
+  window.confirmSaveClient = window.confirmSaveClient;
+  window.cancelSaveClient = window.cancelSaveClient;
 
-  // Load clients when page initialized
+  // load clients on DOM ready
   window.addEventListener("DOMContentLoaded", loadClients);
 </script>
 

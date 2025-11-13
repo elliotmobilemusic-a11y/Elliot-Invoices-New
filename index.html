@@ -14,187 +14,199 @@
       .no-print { display: none !important; }
       .invoice-container { box-shadow: none !important; border: none !important; margin: 0; padding: 0; }
       .text-gray-700, .text-gray-900 { color: #000 !important; }
+      /* Ensure table headers print */
+      thead { display: table-header-group; }
     }
 
-    body { font-family: "Inter", sans-serif; background-color: #f7f9fb; }
-    .invoice-container {
-      max-width: 1000px;
-      margin: 2rem auto;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
-      padding: 2.5rem;
-      border: 1px solid #e5e7eb;
-    }
-
-    .block-end { font-weight: 700; color: #3730A3; }
-    .desc-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 36rem; display: inline-block; }
-
-    @media (max-width: 640px) {
-      .grid-cols-2-sm { grid-template-columns: 1fr; }
+    /* Small custom refinements */
+    body { font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background-color: #eef2ff; } /* subtle indigo-50 */
+    .invoice-wrapper { max-width: 1100px; margin: 2.5rem auto; padding: 1rem; }
+    .invoice-container { background: white; border-radius: 1rem; padding: 1.25rem; box-shadow: 0 8px 24px rgba(15,23,42,0.06); border: 1px solid rgba(99,102,241,0.06); }
+    .card { border-radius: 0.75rem; }
+    .desc-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 34rem; display: inline-block; }
+    /* Make interactive controls comfortably large for touch */
+    .btn { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+    /* Table scroll on mobile */
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    /* Sticky header on desktop */
+    @media (min-width: 768px) {
+      thead th { position: sticky; top: 0; background: #eef2ff; z-index: 10; }
     }
   </style>
 </head>
 <body>
 
-<div class="invoice-container" id="invoice-document">
-  <!-- Header -->
-  <header class="flex justify-between items-center pb-6 border-b border-indigo-200">
-    <div>
-      <h1 class="text-3xl font-extrabold text-indigo-700">INVOICE</h1>
-      <div class="mt-2 flex items-center space-x-2 text-sm text-gray-500">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-        </svg>
-        <span id="invoice-date">October 18, 2025</span>
-      </div>
-    </div>
+<div class="invoice-wrapper">
+  <div class="invoice-container card">
 
-    <div class="text-right">
-      <h2 class="text-xl font-semibold text-gray-900">Elliot Wardill Mobile Music Lessons</h2>
-      <p class="text-sm text-gray-600">Pudsey, UK</p>
-      <p class="text-sm text-gray-600">Email: elliotmobilemusic@gmail.com</p>
-      <p class="text-sm text-gray-600">Phone: 07368 975144</p>
-    </div>
-  </header>
-
-  <!-- Client and invoice details (no global lesson date/time) -->
-  <section class="py-6 border-b border-gray-100 grid grid-cols-2 gap-4 text-sm">
-    <div>
-      <h3 class="font-semibold text-gray-700 mb-2">BILL TO:</h3>
-      <input id="client-name" type="text" placeholder="Client Full Name" class="w-full p-2 border border-gray-300 rounded-lg mb-1">
-      <input id="client-address" type="text" placeholder="Address, Postcode" class="w-full p-2 border border-gray-300 rounded-lg">
-    </div>
-
-    <div class="text-right">
-      <h3 class="font-semibold text-gray-700 mb-2">INVOICE DETAILS:</h3>
-      <input id="invoice-number" type="text" value="EW-" class="w-40 p-2 border border-gray-300 rounded-lg text-right mb-2">
-      <div class="text-sm text-gray-500">DUE DATE: <input id="due-date" type="date" class="border border-gray-300 rounded-lg p-1"></div>
-    </div>
-  </section>
-
-  <!-- Line items table -->
-  <section class="mt-6">
-    <table class="min-w-full divide-y divide-gray-200">
-      <thead class="bg-indigo-50">
-        <tr>
-          <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-          <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-          <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
-          <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
-          <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Unit (£)</th>
-          <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount (£)</th>
-          <th class="px-2 py-2 no-print"></th>
-        </tr>
-      </thead>
-      <tbody id="item-list" class="bg-white divide-y divide-gray-200"></tbody>
-    </table>
-
-    <!-- Add dropdown (Single / Block) -->
-    <div class="no-print mt-4 flex items-center justify-between">
-      <div class="relative inline-block text-left">
-        <button id="add-menu-btn" onclick="toggleAddMenu()" class="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 flex items-center">
-          Add Lesson ▾
-        </button>
-        <div id="add-menu" class="hidden absolute mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
-          <button onclick="openSingleLessonForm()" class="block w-full text-left px-4 py-2 hover:bg-indigo-50">➕ Single Lesson</button>
-          <button onclick="openBlockBookingForm()" class="block w-full text-left px-4 py-2 hover:bg-indigo-50">📅 Block Booking</button>
+    <!-- HEADER -->
+    <header class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start pb-4 border-b border-indigo-100">
+      <div>
+        <h1 class="text-4xl md:text-5xl font-extrabold text-indigo-700 tracking-tight">INVOICE</h1>
+        <div class="mt-3 flex items-center text-sm text-indigo-600">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V8H3v11a2 2 0 002 2z"/>
+          </svg>
+          <span id="invoice-date" class="font-medium">October 18, 2025</span>
         </div>
       </div>
 
-      <div class="text-sm text-gray-500">Click <span class="font-semibold">Add Lesson</span> to add single or block bookings.</div>
-    </div>
+      <div class="text-left md:text-right">
+        <div class="font-semibold text-lg text-gray-800">Elliot Wardill Mobile Music Lessons</div>
+        <div class="text-sm text-gray-600 mt-1">Pudsey, UK</div>
+        <div class="text-sm text-gray-600">elliotmobilemusic@gmail.com</div>
+        <div class="text-sm text-gray-600">07368 975144</div>
+      </div>
+    </header>
 
-    <!-- Inline single-lesson quick form -->
-    <div id="single-lesson-form" class="no-print hidden mt-4 p-4 border border-gray-200 rounded-lg bg-white">
-      <div class="grid grid-cols-3 gap-3">
-        <select id="single-lesson-type" class="p-2 border rounded-lg"></select>
-        <input id="single-lesson-date" type="date" class="p-2 border rounded-lg" aria-label="Lesson date">
-        <input id="single-lesson-time" type="time" class="p-2 border rounded-lg" aria-label="Lesson time">
+    <!-- CLIENT + INVOICE DETAILS (card) -->
+    <section class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="p-4 bg-white card border border-indigo-50">
+        <h3 class="text-sm font-semibold text-gray-700 mb-2">BILL TO:</h3>
+        <input id="client-name" type="text" placeholder="Client Full Name" class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-200 mb-3" />
+        <input id="client-address" type="text" placeholder="Address, Postcode" class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-200" />
       </div>
-      <div class="flex justify-end mt-3">
-        <button onclick="addSingleLessonFromForm()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Add</button>
-        <button onclick="closeSingleForm()" class="ml-2 px-4 py-2 border rounded-lg">Cancel</button>
-      </div>
-    </div>
 
-    <!-- Inline block booking form -->
-    <div id="block-booking-form" class="no-print hidden mt-4 p-4 border border-gray-200 rounded-lg bg-white">
-      <div class="grid grid-cols-2 gap-3">
-        <select id="block-lesson-type" class="p-2 border rounded-lg"></select>
-        <input id="block-start-date" type="date" class="p-2 border rounded-lg" aria-label="Block start date">
-        <input id="block-time" type="time" class="p-2 border rounded-lg" aria-label="Block lesson time">
-        <input id="block-weeks" type="number" min="1" value="4" class="p-2 border rounded-lg" placeholder="Number of weeks">
+      <div class="p-4 bg-white card border border-indigo-50">
+        <h3 class="text-sm font-semibold text-gray-700 mb-2">INVOICE DETAILS:</h3>
+        <div class="grid grid-cols-2 gap-3">
+          <input id="invoice-number" type="text" value="EW-" class="p-3 border border-gray-200 rounded-lg text-right focus:ring-2 focus:ring-indigo-200" />
+          <div class="p-3 border border-gray-100 rounded-lg bg-indigo-50 text-sm text-gray-700">DUE DATE: <input id="due-date" type="date" class="ml-2 text-sm" /></div>
+          <div class="col-span-2 text-xs text-gray-500 mt-1">Tip: Use <span class="font-medium">Add Lesson ▾</span> to add single lessons or generate a block of lessons.</div>
+        </div>
       </div>
-      <div class="flex justify-between items-center mt-3">
-        <div class="text-sm text-gray-600">This will add one lesson per week, 7 days apart. You can edit any generated date/time afterwards.</div>
+    </section>
+
+    <!-- LESSONS TABLE -->
+    <section class="mt-6 p-0">
+      <div class="bg-white card border border-indigo-50 p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h4 class="font-semibold text-gray-700">Lessons</h4>
+
+          <!-- Add dropdown (Single / Block) -->
+          <div class="relative inline-block text-left">
+            <button id="add-menu-btn" onclick="toggleAddMenu()" class="btn px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-shadow shadow-sm">
+              Add Lesson ▾
+            </button>
+            <div id="add-menu" class="hidden absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-40">
+              <button onclick="openSingleLessonForm()" class="block w-full text-left px-4 py-3 hover:bg-indigo-50">➕ Single Lesson</button>
+              <button onclick="openBlockBookingForm()" class="block w-full text-left px-4 py-3 hover:bg-indigo-50">📅 Block Booking</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- single-lesson inline form -->
+        <div id="single-lesson-form" class="no-print hidden mb-4 p-3 border border-gray-100 rounded-lg bg-indigo-50">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <select id="single-lesson-type" class="p-3 border rounded-lg"></select>
+            <input id="single-lesson-date" type="date" class="p-3 border rounded-lg" />
+            <input id="single-lesson-time" type="time" class="p-3 border rounded-lg" />
+          </div>
+          <div class="mt-3 flex gap-2">
+            <button onclick="addSingleLessonFromForm()" class="btn px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Add</button>
+            <button onclick="closeSingleForm()" class="btn px-4 py-2 border rounded-lg">Cancel</button>
+          </div>
+        </div>
+
+        <!-- block booking inline form -->
+        <div id="block-booking-form" class="no-print hidden mb-4 p-3 border border-gray-100 rounded-lg bg-indigo-50">
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+            <select id="block-lesson-type" class="p-3 border rounded-lg"></select>
+            <input id="block-start-date" type="date" class="p-3 border rounded-lg" />
+            <input id="block-time" type="time" class="p-3 border rounded-lg" />
+            <input id="block-weeks" type="number" min="1" value="4" class="p-3 border rounded-lg" placeholder="Number of weeks" />
+          </div>
+          <div class="mt-3 flex items-center justify-between">
+            <div class="text-sm text-gray-600">Creates one lesson per week (7 days apart). You can edit individual rows after generation.</div>
+            <div class="flex gap-2">
+              <button onclick="generateBlockLessons()" class="btn px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Generate Block</button>
+              <button onclick="closeBlockForm()" class="btn px-4 py-2 border rounded-lg">Cancel</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- table wrap for horizontal scroll on mobile -->
+        <div class="table-wrap">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-indigo-700 text-white">
+              <tr>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Description</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Date</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Time</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold uppercase">Qty</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold uppercase">Unit (£)</th>
+                <th class="px-4 py-3 text-right text-xs font-semibold uppercase">Amount (£)</th>
+                <th class="px-2 py-3 no-print"></th>
+              </tr>
+            </thead>
+            <tbody id="item-list" class="bg-white divide-y divide-gray-100">
+              <!-- Rows inserted by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TOTALS card -->
+    <section class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div class="p-4 bg-white card border border-indigo-50">
+        <h3 class="font-semibold text-gray-700 mb-2">Notes</h3>
+        <textarea id="invoice-notes" rows="4" class="w-full p-3 border border-gray-200 rounded-lg" placeholder="e.g., Payment due upon receipt. Next lesson booked for..."></textarea>
+      </div>
+
+      <div class="p-4 bg-white card border border-indigo-50 flex flex-col justify-between">
         <div>
-          <button onclick="generateBlockLessons()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Generate Block</button>
-          <button onclick="closeBlockForm()" class="ml-2 px-4 py-2 border rounded-lg">Cancel</button>
+          <div class="flex justify-between text-sm text-gray-600 mb-2">
+            <span>Subtotal:</span>
+            <span id="subtotal" class="font-medium">£0.00</span>
+          </div>
+
+          <div class="flex justify-between items-center text-sm text-gray-700 border-t pt-3">
+            <div>
+              <div id="travel-fee-label" class="font-medium">Travel Fee:</div>
+              <div class="text-xs text-gray-500">Per session (multiplied by number of lessons)</div>
+            </div>
+            <div class="text-right">
+              <select id="travel-fee" onchange="calculateTotal()" class="p-2 border rounded-lg">
+                <option value="0">Within 5 miles – £0</option>
+                <option value="5">5 miles+ – £5</option>
+                <option value="10">10 miles+ – £10</option>
+                <option value="20">15 miles+ – £20</option>
+              </select>
+              <div id="travel-fee-total" class="text-sm mt-2 text-gray-700">£0.00</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 border-t pt-4">
+          <div class="flex justify-between items-center text-lg font-bold text-indigo-700">
+            <span>GRAND TOTAL:</span>
+            <span id="grand-total">£0.00</span>
+          </div>
+
+          <div class="mt-4 no-print">
+            <button onclick="triggerPrint()" class="w-full btn px-4 py-3 bg-indigo-700 text-white rounded-lg hover:bg-indigo-800">Print / Save as PDF</button>
+          </div>
         </div>
       </div>
-    </div>
+    </section>
 
-  </section>
-
-  <!-- Totals -->
-  <section class="mt-8 flex justify-end">
-    <div class="w-full md:w-1/2 space-y-3">
-      <div class="flex justify-between text-sm font-medium text-gray-700">
-        <span>Subtotal:</span>
-        <span id="subtotal">£0.00</span>
+    <!-- PAYMENT details (card) -->
+    <section class="mt-6">
+      <div class="p-4 bg-white card border border-indigo-50">
+        <h3 class="font-semibold text-gray-700 mb-2">Payment Details (Bank Transfer)</h3>
+        <p class="text-gray-800 font-medium">Account Name: Elliot Wardill</p>
+        <p class="text-gray-800 font-medium">Sort Code: 56-00-36</p>
+        <p class="text-gray-800 font-medium">Account No: 40013987</p>
       </div>
+    </section>
 
-      <div class="flex justify-between items-center text-sm font-medium text-gray-700 border-t pt-2">
-        <div>
-          <span id="travel-fee-label">Travel Fee:</span>
-          <div class="text-xs text-gray-500">Per session (multiplied by number of lessons)</div>
-        </div>
-        <div class="text-right">
-          <select id="travel-fee" onchange="calculateTotal()" class="border border-gray-300 rounded-lg p-1">
-            <option value="0">Within 5 miles – £0</option>
-            <option value="5">5 miles+ – £5</option>
-            <option value="10">10 miles+ – £10</option>
-            <option value="20">15 miles+ – £20</option>
-          </select>
-          <div id="travel-fee-total" class="text-sm mt-1 text-gray-700">£0.00</div>
-        </div>
-      </div>
-
-      <div class="flex justify-between items-center text-lg font-bold text-gray-800 border-t-4 border-indigo-500 pt-4">
-        <span>GRAND TOTAL:</span>
-        <span id="grand-total">£0.00</span>
-      </div>
-    </div>
-  </section>
-
-  <!-- Notes & payment -->
-  <section class="mt-10 pt-6 border-t border-gray-200 grid md:grid-cols-2 gap-8 text-sm">
-    <div>
-      <h3 class="font-semibold text-gray-700 mb-2">NOTES:</h3>
-      <textarea id="invoice-notes" rows="3" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="Additional notes..."></textarea>
-      <p class="mt-4 text-xs text-gray-500">Thank you for choosing Elliot Wardill Mobile Music Lessons!</p>
-    </div>
-
-    <div>
-      <h3 class="font-semibold text-gray-700 mb-2">PAYMENT DETAILS (Bank Transfer):</h3>
-      <p class="text-gray-900 font-medium mt-2">Account Name: Elliot Wardill</p>
-      <p class="text-gray-900 font-medium">Sort Code: 56-00-36</p>
-      <p class="text-gray-900 font-medium">Account No: 40013987</p>
-    </div>
-  </section>
-</div>
-
-<!-- Controls -->
-<div class="no-print text-center py-6">
-  <button id="print-btn" onclick="triggerPrint()" class="px-8 py-3 bg-indigo-700 text-white font-bold rounded-lg hover:bg-indigo-800">
-    Print / Save as PDF
-  </button>
+  </div>
 </div>
 
 <script>
   /******************************
-   * Configuration
+   * Configuration & constants
    ******************************/
   const LESSON_OPTIONS = {
     'Standard Lesson (30 Mins)': 15.00,
@@ -205,7 +217,7 @@
   };
 
   /******************************
-   * Helpers
+   * Helpers (date/time formatting)
    ******************************/
   function formatDateShortForDisplay(d) {
     const dd = String(d.getDate()).padStart(2, '0');
@@ -226,14 +238,13 @@
     return date.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' });
   }
 
-  // Allow slashes in filename string (user requested). Note: some OS/browsers may still sanitize when saving.
+  // sanitize but allow slashes as requested
   function sanitizeFilenameAllowSlashes(str) {
-    // keep letters, numbers, spaces, dashes, underscores, commas, periods, parentheses and slashes
     return str.replace(/[^a-z0-9 \\-_,.()\\/]/gi, '').trim();
   }
 
   /******************************
-   * Add menu controls
+   * UI: Add menu toggles & forms
    ******************************/
   function toggleAddMenu() {
     const menu = document.getElementById('add-menu');
@@ -243,124 +254,109 @@
   function openSingleLessonForm() {
     document.getElementById('add-menu').classList.add('hidden');
     document.getElementById('single-lesson-form').classList.remove('hidden');
-
-    // no invoice-level defaults (top-level lesson date/time removed)
-    // optionally prefill nothing or smart defaults
-    const todayISO = new Date().toISOString().split('T')[0];
-    if (!document.getElementById('single-lesson-date').value) document.getElementById('single-lesson-date').value = todayISO;
+    // set a smart default date = tomorrow
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const iso = tomorrow.toISOString().split('T')[0];
+    if (!document.getElementById('single-lesson-date').value) document.getElementById('single-lesson-date').value = iso;
   }
   function closeSingleForm() { document.getElementById('single-lesson-form').classList.add('hidden'); }
 
   function openBlockBookingForm() {
     document.getElementById('add-menu').classList.add('hidden');
     document.getElementById('block-booking-form').classList.remove('hidden');
-
-    // default start date = tomorrow
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tISO = tomorrow.toISOString().split('T')[0];
-    if (!document.getElementById('block-start-date').value) document.getElementById('block-start-date').value = tISO;
+    const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
+    if (!document.getElementById('block-start-date').value) document.getElementById('block-start-date').value = tomorrow.toISOString().split('T')[0];
   }
   function closeBlockForm() { document.getElementById('block-booking-form').classList.add('hidden'); }
 
   /******************************
-   * Row creation & updates
+   * Row creation and behavior
    ******************************/
   function createRow({ lessonName, dateISO, timeStr, qty = 1, unitPrice = 0.00 }) {
     const tbody = document.getElementById('item-list');
+
+    // create row
     const tr = document.createElement('tr');
     tr.className = 'item-row';
 
-    // description (auto-formatted from lessonName + date/time)
+    // description cell
+    const descCell = document.createElement('td');
+    descCell.className = 'px-4 py-3 align-top';
     const descDiv = document.createElement('div');
-    descDiv.className = 'desc-text';
+    descDiv.className = 'desc-text text-gray-800 font-medium';
     updateRowDescriptionText(descDiv, lessonName, dateISO, timeStr);
+    descCell.appendChild(descDiv);
 
-    const tdDesc = document.createElement('td');
-    tdDesc.className = 'px-4 py-3 align-top';
-    tdDesc.appendChild(descDiv);
-
-    // date cell (editable)
-    const tdDate = document.createElement('td');
-    tdDate.className = 'px-4 py-3 align-top';
+    // date cell
+    const dateCell = document.createElement('td');
+    dateCell.className = 'px-4 py-3 align-top';
     const dateInput = document.createElement('input');
     dateInput.type = 'date';
     dateInput.value = dateISO || '';
-    dateInput.className = 'p-1 border rounded-lg';
-    tdDate.appendChild(dateInput);
+    dateInput.className = 'p-2 border rounded-lg';
+    dateCell.appendChild(dateInput);
 
-    // time cell (editable)
-    const tdTime = document.createElement('td');
-    tdTime.className = 'px-4 py-3 align-top';
+    // time cell
+    const timeCell = document.createElement('td');
+    timeCell.className = 'px-4 py-3 align-top';
     const timeInput = document.createElement('input');
     timeInput.type = 'time';
     timeInput.value = timeStr || '';
-    timeInput.className = 'p-1 border rounded-lg';
-    tdTime.appendChild(timeInput);
+    timeInput.className = 'p-2 border rounded-lg';
+    timeCell.appendChild(timeInput);
 
     // qty
-    const tdQty = document.createElement('td');
-    tdQty.className = 'px-4 py-3 align-top text-right';
+    const qtyCell = document.createElement('td');
+    qtyCell.className = 'px-4 py-3 align-top text-right';
     const qtyInput = document.createElement('input');
     qtyInput.type = 'number';
     qtyInput.min = '1';
     qtyInput.value = qty;
-    qtyInput.className = 'item-qty w-16 p-1 text-right border-b border-gray-300';
-    tdQty.appendChild(qtyInput);
+    qtyInput.className = 'item-qty w-20 p-2 text-right border-b border-gray-200';
+    qtyCell.appendChild(qtyInput);
 
     // unit price
-    const tdPrice = document.createElement('td');
-    tdPrice.className = 'px-4 py-3 align-top text-right';
+    const priceCell = document.createElement('td');
+    priceCell.className = 'px-4 py-3 align-top text-right';
     const priceInput = document.createElement('input');
     priceInput.type = 'number';
     priceInput.min = '0';
     priceInput.step = '0.01';
     priceInput.value = parseFloat(unitPrice).toFixed(2);
-    priceInput.className = 'item-price w-20 p-1 text-right border-b border-gray-300';
-    tdPrice.appendChild(priceInput);
+    priceInput.className = 'item-price w-24 p-2 text-right border-b border-gray-200';
+    priceCell.appendChild(priceInput);
 
     // amount
-    const tdAmount = document.createElement('td');
-    tdAmount.className = 'px-4 py-3 align-top text-right font-medium';
-    tdAmount.textContent = (qty * unitPrice).toFixed(2);
+    const amountCell = document.createElement('td');
+    amountCell.className = 'px-4 py-3 align-top text-right font-medium';
+    amountCell.textContent = (qty * unitPrice).toFixed(2);
 
-    // remove button
-    const tdRemove = document.createElement('td');
-    tdRemove.className = 'px-2 py-3 no-print';
+    // remove
+    const rmCell = document.createElement('td');
+    rmCell.className = 'px-2 py-3 no-print';
     const rmBtn = document.createElement('button');
     rmBtn.className = 'text-red-500 hover:text-red-700';
     rmBtn.innerHTML = '✕';
     rmBtn.onclick = () => { tr.remove(); calculateTotal(); };
-    tdRemove.appendChild(rmBtn);
+    rmCell.appendChild(rmBtn);
 
-    // append cells to row
-    tr.appendChild(tdDesc);
-    tr.appendChild(tdDate);
-    tr.appendChild(tdTime);
-    tr.appendChild(tdQty);
-    tr.appendChild(tdPrice);
-    tr.appendChild(tdAmount);
-    tr.appendChild(tdRemove);
-
-    // listeners to keep description & totals in sync
-    dateInput.addEventListener('input', () => {
-      updateRowDescriptionText(descDiv, lessonName, dateInput.value, timeInput.value);
-      calculateTotal();
-    });
-    timeInput.addEventListener('input', () => {
-      updateRowDescriptionText(descDiv, lessonName, dateInput.value, timeInput.value);
-      calculateTotal();
-    });
-    qtyInput.addEventListener('input', () => {
-      tdAmount.textContent = (parseFloat(qtyInput.value || 0) * parseFloat(priceInput.value || 0)).toFixed(2);
-      calculateTotal();
-    });
-    priceInput.addEventListener('input', () => {
-      tdAmount.textContent = (parseFloat(qtyInput.value || 0) * parseFloat(priceInput.value || 0)).toFixed(2);
-      calculateTotal();
-    });
-
+    // append
+    tr.appendChild(descCell);
+    tr.appendChild(dateCell);
+    tr.appendChild(timeCell);
+    tr.appendChild(qtyCell);
+    tr.appendChild(priceCell);
+    tr.appendChild(amountCell);
+    tr.appendChild(rmCell);
     tbody.appendChild(tr);
+
+    // events to keep in sync
+    dateInput.addEventListener('input', () => { updateRowDescriptionText(descDiv, lessonName, dateInput.value, timeInput.value); calculateTotal(); });
+    timeInput.addEventListener('input', () => { updateRowDescriptionText(descDiv, lessonName, dateInput.value, timeInput.value); calculateTotal(); });
+    qtyInput.addEventListener('input', () => { amountCell.textContent = (parseFloat(qtyInput.value||0) * parseFloat(priceInput.value||0)).toFixed(2); calculateTotal(); });
+    priceInput.addEventListener('input', () => { amountCell.textContent = (parseFloat(qtyInput.value||0) * parseFloat(priceInput.value||0)).toFixed(2); calculateTotal(); });
+
     calculateTotal();
     return tr;
   }
@@ -455,14 +451,15 @@
     document.getElementById('grand-total').textContent = '£' + grand.toFixed(2);
   }
 
-  // get earliest lesson date in DD/MM/YYYY for filename
+  /******************************
+   * Filename helper (earliest lesson date)
+   ******************************/
   function getEarliestLessonDateForFilename() {
     const dateInputs = Array.from(document.querySelectorAll('#item-list input[type="date"]'))
       .map(i => i.value)
       .filter(v => v && v.trim().length > 0);
 
     if (dateInputs.length === 0) return null;
-    // convert to timestamps and pick earliest
     const timestamps = dateInputs.map(s => new Date(s + 'T00:00:00').getTime());
     const minTs = Math.min(...timestamps);
     const d = new Date(minTs);
@@ -473,14 +470,11 @@
     const invoiceNo = document.getElementById('invoice-number').value || 'Invoice';
     const client = document.getElementById('client-name').value || 'Client';
     const earliest = getEarliestLessonDateForFilename();
-    const dateForFile = earliest || new Date().toISOString().split('T')[0]; // if none, fallback to ISO
-    // dateForFile may be dd/mm/yyyy if earliest exists, otherwise ISO
-    // ensure filename includes slashes as requested
-    const fileDate = earliest ? earliest : (new Date(dateForFile + 'T00:00:00')).toLocaleDateString('en-GB').replace(/-/g, '/');
+    const fileDate = earliest ? earliest : formatDateShortForDisplay(new Date());
     const filename = `${client} - ${fileDate} - ${invoiceNo}`;
     document.title = sanitizeFilenameAllowSlashes(filename);
 
-    // Make sure descriptions reflect the latest edited dates/times
+    // Ensure descriptions reflect latest date/time
     document.querySelectorAll('#item-list tr').forEach(tr => {
       const descEl = tr.querySelector('.desc-text');
       const lessonName = descEl ? descEl.textContent.split(' – ')[0] : '';
@@ -505,23 +499,23 @@
     blockSelect.innerHTML = '';
     singleSelect.innerHTML = '';
 
-    const placeholder1 = document.createElement('option');
-    placeholder1.disabled = true;
-    placeholder1.selected = true;
-    placeholder1.textContent = 'Select Lesson Type';
-    singleSelect.appendChild(placeholder1.cloneNode(true));
-    blockSelect.appendChild(placeholder1.cloneNode(true));
+    const placeholder = document.createElement('option');
+    placeholder.disabled = true;
+    placeholder.selected = true;
+    placeholder.textContent = 'Select Lesson Type';
+    singleSelect.appendChild(placeholder.cloneNode(true));
+    blockSelect.appendChild(placeholder.cloneNode(true));
 
     Object.keys(LESSON_OPTIONS).forEach(name => {
-      const opt1 = document.createElement('option');
-      opt1.value = name;
-      opt1.textContent = name;
-      singleSelect.appendChild(opt1);
+      const o1 = document.createElement('option');
+      o1.value = name;
+      o1.textContent = name;
+      singleSelect.appendChild(o1);
 
-      const opt2 = document.createElement('option');
-      opt2.value = name;
-      opt2.textContent = name;
-      blockSelect.appendChild(opt2);
+      const o2 = document.createElement('option');
+      o2.value = name;
+      o2.textContent = name;
+      blockSelect.appendChild(o2);
     });
   }
 
@@ -533,17 +527,17 @@
 
     populateLessonSelects();
 
-    // Add one default row to start for convenience
+    // convenience: add one default row
     addSingleLesson('Standard Lesson (60 Mins)', todayISO, '17:00');
 
-    // hide add menu when clicking outside
+    // Hide add menu when clicking outside
     document.addEventListener('click', function(e) {
       const menu = document.getElementById('add-menu');
       const btn = document.getElementById('add-menu-btn');
-      if (!btn.contains(e.target) && !menu.contains(e.target)) menu.classList.add('hidden');
+      if (!btn.contains(e.target) && menu && !menu.contains(e.target)) menu.classList.add('hidden');
     });
 
-    // recalc totals when item-list edited
+    // Recalculate totals when editing rows directly
     document.getElementById('item-list').addEventListener('input', function() {
       calculateTotal();
     });

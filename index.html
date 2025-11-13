@@ -7,73 +7,53 @@
   <link rel="icon" type="image/png" href="i-favicon.png">
   <script src="https://cdn.tailwindcss.com"></script>
 
-/* --- FIX: Lesson Table Layout for Print & Screen --- */
-table {
-  table-layout: fixed;
-  width: 100%;
-  border-collapse: collapse;
-}
-
-/* Make description flexibly large, allow wrapping */
-th:nth-child(1), td:nth-child(1) {
-  width: 45%;
-  white-space: normal;
-  word-wrap: break-word;
-  overflow-wrap: anywhere;
-}
-
-/* Fixed widths for others */
-th:nth-child(2), td:nth-child(2) { width: 12%; min-width: 100px; } /* Date */
-th:nth-child(3), td:nth-child(3) { width: 10%; min-width: 90px; }  /* Time */
-th:nth-child(4), td:nth-child(4) { width: 7%; min-width: 70px; }   /* Qty */
-th:nth-child(5), td:nth-child(5) { width: 10%; min-width: 90px; }  /* Unit */
-th:nth-child(6), td:nth-child(6) { width: 10%; min-width: 90px; }  /* Amount */
-
-/* Print safety margin */
-@media print {
-  body {
-    margin: 0.5cm;
-    zoom: 0.95; /* slight shrink to prevent clipping */
-  }
-
-    /* Page background & container */
-    body { font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background-color: #eef2ff; } /* indigo-50 */
-    .invoice-wrapper { max-width: 1100px; margin: 2.5rem auto; padding: 1rem; }
-    .invoice-container { background: white; border-radius: 1rem; padding: 1.25rem; box-shadow: 0 8px 24px rgba(15,23,42,0.06); border: 1px solid rgba(79,70,229,0.06); } /* indigo-700 accent subtle border */
-
-    /* Cards & spacing */
-    .card { border-radius: 0.75rem; }
-    .desc-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 38rem; display: inline-block; }
-
-    /* Touch targets */
-    .btn { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
-
-    /* Table scroll on mobile */
-    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-
-    /* sticky header on larger screens */
-    @media (min-width: 768px) {
-      thead th { position: sticky; top: 0; background: #4f46e5; z-index: 10; }
+  <style>
+    /* ===== Print-first safe layout ===== */
+    @media print {
+      body { background: white; font-size: 10pt; margin: 0.5cm; }
+      .no-print { display: none !important; }
+      .invoice-container { box-shadow: none !important; border: none !important; margin: 0; padding: 0; }
+      .text-gray-700, .text-gray-900 { color: #000 !important; }
+      thead { display: table-header-group; } /* repeat header across pages */
+      table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+      input, textarea, select, button { border: none !important; box-shadow: none !important; }
+      tr { page-break-inside: avoid; }
+      /* Hide any element we purposely mark as no-export */
+      .hide-for-export { display: none !important; }
     }
 
-    /* Ensure date/time columns have min widths so they don't collapse when printing */
-    .col-date { min-width: 110px; }   /* keeps date visible */
-    .col-time { min-width: 100px; }   /* keeps time visible */
-    .col-qty { min-width: 80px; }
-    .col-unit { min-width: 100px; }
-    .col-amount { min-width: 110px; }
+    /* ===== Page styling ===== */
+    body { font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background-color: #eef2ff; } /* indigo-50 */
+    .invoice-wrapper { max-width: 1100px; margin: 2.5rem auto; padding: 1rem; }
+    .invoice-container { background: white; border-radius: 1rem; padding: 1.25rem; box-shadow: 0 8px 24px rgba(15,23,42,0.06); border: 1px solid rgba(79,70,229,0.06); }
 
-    /* Responsive adjustments */
+    .card { border-radius: 0.75rem; }
+    .btn { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+    /* ===== Table column width rules (fixed layout) ===== */
+    table { table-layout: fixed; width: 100%; }
+    th:nth-child(1), td:nth-child(1) { width: 45%; white-space: normal; word-wrap: break-word; overflow-wrap: anywhere; } /* Description */
+    th:nth-child(2), td:nth-child(2) { width: 12%; min-width: 100px; } /* Date */
+    th:nth-child(3), td:nth-child(3) { width: 10%; min-width: 95px; }  /* Time */
+    th:nth-child(4), td:nth-child(4) { width: 7%; min-width: 70px; }   /* Qty */
+    th:nth-child(5), td:nth-child(5) { width: 10%; min-width: 90px; }  /* Unit */
+    th:nth-child(6), td:nth-child(6) { width: 10%; min-width: 95px; }  /* Amount */
+
+    .desc-text { line-height: 1.25; display: block; }
+
+    /* Visual message for client manager */
+    .msg { padding: 0.5rem 0.75rem; border-radius: 8px; font-size: 0.95rem; }
+    .msg.success { background: #ecfccb; color: #166534; border: 1px solid #bbf7d0; }
+    .msg.error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+
     @media (max-width: 640px) {
       .desc-text { max-width: 18rem; }
       .invoice-container { padding: 1rem; }
       .btn { width: 100%; }
+      th, td { padding-left: 0.75rem; padding-right: 0.75rem; }
     }
-
-    /* small success / error message style for client manager */
-    .msg { padding: 0.5rem 0.75rem; border-radius: 8px; font-size: 0.9rem; }
-    .msg.success { background: #ecfccb; color: #166534; border: 1px solid #bbf7d0; }
-    .msg.error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
   </style>
 </head>
 <body>
@@ -81,7 +61,7 @@ th:nth-child(6), td:nth-child(6) { width: 10%; min-width: 90px; }  /* Amount */
 <div class="invoice-wrapper">
   <div class="invoice-container card">
 
-    <!-- HEADER -->
+    <!-- HEADER (kept visible in export) -->
     <header class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start pb-4 border-b border-indigo-100">
       <div>
         <h1 class="text-4xl md:text-5xl font-extrabold text-indigo-700 tracking-tight">INVOICE</h1>
@@ -101,8 +81,8 @@ th:nth-child(6), td:nth-child(6) { width: 10%; min-width: 90px; }  /* Amount */
       </div>
     </header>
 
-    <!-- CLIENT MANAGER (indigo-tinted card) -->
-    <section class="mt-6">
+    <!-- CLIENT MANAGER (UI only; hidden in export) -->
+    <section id="client-manager-section" class="mt-6 no-print">
       <div class="p-4 rounded-lg bg-indigo-50 border border-indigo-100 card">
         <h3 class="text-sm font-semibold text-indigo-800 mb-3">Client Manager</h3>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -111,10 +91,10 @@ th:nth-child(6), td:nth-child(6) { width: 10%; min-width: 90px; }  /* Amount */
           </select>
           <div class="flex gap-2 sm:justify-end">
             <button id="open-save-btn" onclick="openClientSavePrompt()" class="btn px-4 py-2 bg-indigo-700 text-white rounded-lg hover:bg-indigo-800">+ Save Client</button>
+            <button onclick="deleteClient()" class="btn px-4 py-2 border rounded-lg">Delete</button>
           </div>
         </div>
 
-        <!-- confirmation area -->
         <div id="save-client-confirm" class="hidden mt-4 bg-white p-3 rounded-lg border border-indigo-100">
           <p class="text-sm text-gray-700 mb-3">Save the current client details?</p>
           <div class="flex gap-2">
@@ -123,24 +103,19 @@ th:nth-child(6), td:nth-child(6) { width: 10%; min-width: 90px; }  /* Amount */
           </div>
         </div>
 
-        <!-- feedback message -->
         <div id="client-msg" class="mt-3" aria-live="polite"></div>
-
-        <div class="mt-3">
-          <button onclick="deleteClient()" class="text-sm text-red-600 hover:text-red-800 no-print">🗑️ Delete Selected Client</button>
-        </div>
       </div>
     </section>
 
-    <!-- CLIENT + INVOICE DETAILS (card) -->
+    <!-- BILL TO & INVOICE DETAILS (BOTH visible in export) -->
     <section class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div class="p-4 bg-white card border border-indigo-50">
+      <div id="billto-section" class="p-4 bg-white card border border-indigo-50">
         <h3 class="text-sm font-semibold text-gray-700 mb-2">BILL TO:</h3>
         <input id="client-name" type="text" placeholder="Client Full Name" class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-200 mb-3" />
         <input id="client-address" type="text" placeholder="Address, Postcode" class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-200" />
       </div>
 
-      <div class="p-4 bg-white card border border-indigo-50">
+      <div id="invoice-details-section" class="p-4 bg-white card border border-indigo-50">
         <h3 class="text-sm font-semibold text-gray-700 mb-2">INVOICE DETAILS:</h3>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <input id="invoice-number" type="text" value="EW-" class="p-3 border border-gray-200 rounded-lg text-right focus:ring-2 focus:ring-indigo-200" />
@@ -150,14 +125,13 @@ th:nth-child(6), td:nth-child(6) { width: 10%; min-width: 90px; }  /* Amount */
       </div>
     </section>
 
-    <!-- LESSONS TABLE -->
+    <!-- LESSONS & FORMS (forms hidden in export) -->
     <section class="mt-6 p-0">
       <div class="bg-white card border border-indigo-50 p-4">
         <div class="flex items-center justify-between mb-3">
           <h4 class="font-semibold text-gray-700">Lessons</h4>
 
-          <!-- Add dropdown (Single / Block) -->
-          <div class="relative inline-block text-left">
+          <div class="relative inline-block text-left no-print">
             <button id="add-menu-btn" onclick="toggleAddMenu()" class="btn px-4 py-2 bg-indigo-700 text-white rounded-lg hover:bg-indigo-800 transition-shadow shadow-sm">
               Add Lesson ▾
             </button>
@@ -168,7 +142,7 @@ th:nth-child(6), td:nth-child(6) { width: 10%; min-width: 90px; }  /* Amount */
           </div>
         </div>
 
-        <!-- single-lesson inline form -->
+        <!-- single-lesson inline form (no-print) -->
         <div id="single-lesson-form" class="no-print hidden mb-4 p-3 border border-gray-100 rounded-lg bg-indigo-50">
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <select id="single-lesson-type" class="p-3 border rounded-lg"></select>
@@ -181,7 +155,7 @@ th:nth-child(6), td:nth-child(6) { width: 10%; min-width: 90px; }  /* Amount */
           </div>
         </div>
 
-        <!-- block booking inline form -->
+        <!-- block booking inline form (no-print) -->
         <div id="block-booking-form" class="no-print hidden mb-4 p-3 border border-gray-100 rounded-lg bg-indigo-50">
           <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
             <select id="block-lesson-type" class="p-3 border rounded-lg"></select>
@@ -198,17 +172,17 @@ th:nth-child(6), td:nth-child(6) { width: 10%; min-width: 90px; }  /* Amount */
           </div>
         </div>
 
-        <!-- table wrap for horizontal scroll on mobile -->
+        <!-- lessons table -->
         <div class="table-wrap">
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-indigo-700 text-white">
               <tr>
                 <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">Description</th>
-                <th class="col-date px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">Date</th>
-                <th class="col-time px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">Time</th>
-                <th class="col-qty px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider">Qty</th>
-                <th class="col-unit px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider">Unit (£)</th>
-                <th class="col-amount px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider">Amount (£)</th>
+                <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">Date</th>
+                <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">Time</th>
+                <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider">Qty</th>
+                <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider">Unit (£)</th>
+                <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider">Amount (£)</th>
                 <th class="px-2 py-3 no-print"></th>
               </tr>
             </thead>
@@ -220,13 +194,14 @@ th:nth-child(6), td:nth-child(6) { width: 10%; min-width: 90px; }  /* Amount */
       </div>
     </section>
 
-    <!-- TOTALS card -->
-    <section class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+    <!-- NOTES (hide in export if empty) -->
+    <section id="notes-section" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 no-export-if-empty">
       <div class="p-4 bg-white card border border-indigo-50">
         <h3 class="font-semibold text-gray-700 mb-2">Notes</h3>
         <textarea id="invoice-notes" rows="4" class="w-full p-3 border border-gray-200 rounded-lg" placeholder="e.g., Payment due upon receipt. Next lesson booked for..."></textarea>
       </div>
 
+      <!-- Totals & Travel -->
       <div class="p-4 bg-white card border border-indigo-50 flex flex-col justify-between">
         <div>
           <div class="flex justify-between text-sm text-gray-600 mb-2">
@@ -258,14 +233,14 @@ th:nth-child(6), td:nth-child(6) { width: 10%; min-width: 90px; }  /* Amount */
           </div>
 
           <div class="mt-4 no-print">
-            <button onclick="triggerPrint()" class="w-full btn px-4 py-3 bg-indigo-700 text-white rounded-lg hover:bg-indigo-800">Print / Save as PDF</button>
+            <button onclick="prepareForPrint()" class="w-full btn px-4 py-3 bg-indigo-700 text-white rounded-lg hover:bg-indigo-800">Print / Save as PDF</button>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- PAYMENT details (card) -->
-    <section class="mt-6">
+    <!-- PAYMENT details (kept in export) -->
+    <section id="payment-section" class="mt-6">
       <div class="p-4 bg-white card border border-indigo-50">
         <h3 class="font-semibold text-gray-700 mb-2">Payment Details (Bank Transfer)</h3>
         <p class="text-gray-800 font-medium">Account Name: Elliot Wardill</p>
@@ -277,10 +252,10 @@ th:nth-child(6), td:nth-child(6) { width: 10%; min-width: 90px; }  /* Amount */
   </div>
 </div>
 
-<!-- main invoice JS (non-module) -->
+<!-- main invoice JS -->
 <script>
   /******************************
-   * Configuration & constants
+   * Config & helpers
    ******************************/
   const LESSON_OPTIONS = {
     'Standard Lesson (30 Mins)': 15.00,
@@ -290,150 +265,120 @@ th:nth-child(6), td:nth-child(6) { width: 10%; min-width: 90px; }  /* Amount */
     'Free Taster Session': 0.00
   };
 
-  /******************************
-   * Helpers (date/time formatting)
-   ******************************/
   function formatDateShortForDisplay(d) {
-    const dd = String(d.getDate()).padStart(2, '0');
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2,'0');
+    const mm = String(d.getMonth()+1).padStart(2,'0');
     const yy = d.getFullYear();
     return dd + '/' + mm + '/' + yy;
   }
-
   function weekdayShort(d) {
     return d.toLocaleDateString('en-GB', { weekday: 'short' });
   }
-
   function formatTimeTo12H(timeStr) {
     if (!timeStr) return '';
-    const [h, m] = timeStr.split(':').map(Number);
-    const date = new Date();
-    date.setHours(h, m);
+    const [h,m] = timeStr.split(':').map(Number);
+    const date = new Date(); date.setHours(h,m);
     return date.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' });
   }
 
-  // sanitize allow slashes
   function sanitizeFilenameAllowSlashes(str) {
     return str.replace(/[^a-z0-9 \\-_,.()\\/]/gi, '').trim();
   }
 
   /******************************
-   * UI: Add menu toggles & forms
+   * UI toggles & forms
    ******************************/
   function toggleAddMenu() {
-    const menu = document.getElementById('add-menu');
-    menu.classList.toggle('hidden');
+    document.getElementById('add-menu').classList.toggle('hidden');
   }
-
-  function openSingleLessonForm() {
-    document.getElementById('add-menu').classList.add('hidden');
-    document.getElementById('single-lesson-form').classList.remove('hidden');
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const iso = tomorrow.toISOString().split('T')[0];
-    if (!document.getElementById('single-lesson-date').value) document.getElementById('single-lesson-date').value = iso;
-  }
+  function openSingleLessonForm() { document.getElementById('single-lesson-form').classList.remove('hidden'); document.getElementById('add-menu').classList.add('hidden'); }
   function closeSingleForm() { document.getElementById('single-lesson-form').classList.add('hidden'); }
-
-  function openBlockBookingForm() {
-    document.getElementById('add-menu').classList.add('hidden');
-    document.getElementById('block-booking-form').classList.remove('hidden');
-    const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate() + 1);
-    if (!document.getElementById('block-start-date').value) document.getElementById('block-start-date').value = tomorrow.toISOString().split('T')[0];
-  }
+  function openBlockBookingForm() { document.getElementById('block-booking-form').classList.remove('hidden'); document.getElementById('add-menu').classList.add('hidden'); }
   function closeBlockForm() { document.getElementById('block-booking-form').classList.add('hidden'); }
 
   /******************************
-   * Row creation & updates
+   * Row creation & events
    ******************************/
   function createRow({ lessonName, dateISO, timeStr, qty = 1, unitPrice = 0.00 }) {
     const tbody = document.getElementById('item-list');
-
     const tr = document.createElement('tr');
     tr.className = 'item-row';
 
     // description
-    const descCell = document.createElement('td');
-    descCell.className = 'px-6 py-3 align-top';
-    const descDiv = document.createElement('div');
-    descDiv.className = 'desc-text text-gray-800 font-medium';
-    updateRowDescriptionText(descDiv, lessonName, dateISO, timeStr);
-    descCell.appendChild(descDiv);
+    const tdDesc = document.createElement('td');
+    tdDesc.className = 'px-6 py-3 align-top';
+    const desc = document.createElement('div');
+    desc.className = 'desc-text text-gray-800 font-medium';
+    updateRowDescriptionText(desc, lessonName, dateISO, timeStr);
+    tdDesc.appendChild(desc);
 
     // date
-    const dateCell = document.createElement('td');
-    dateCell.className = 'col-date px-6 py-3 align-top';
+    const tdDate = document.createElement('td');
+    tdDate.className = 'px-6 py-3 align-top';
     const dateInput = document.createElement('input');
-    dateInput.type = 'date';
-    dateInput.value = dateISO || '';
+    dateInput.type = 'date'; dateInput.value = dateISO || '';
     dateInput.className = 'p-2 border rounded-lg';
-    dateCell.appendChild(dateInput);
+    tdDate.appendChild(dateInput);
 
     // time
-    const timeCell = document.createElement('td');
-    timeCell.className = 'col-time px-6 py-3 align-top';
+    const tdTime = document.createElement('td');
+    tdTime.className = 'px-6 py-3 align-top';
     const timeInput = document.createElement('input');
-    timeInput.type = 'time';
-    timeInput.value = timeStr || '';
+    timeInput.type = 'time'; timeInput.value = timeStr || '';
     timeInput.className = 'p-2 border rounded-lg';
-    timeCell.appendChild(timeInput);
+    tdTime.appendChild(timeInput);
 
     // qty
-    const qtyCell = document.createElement('td');
-    qtyCell.className = 'col-qty px-6 py-3 align-top text-right';
+    const tdQty = document.createElement('td');
+    tdQty.className = 'px-6 py-3 align-top text-right';
     const qtyInput = document.createElement('input');
-    qtyInput.type = 'number';
-    qtyInput.min = '1';
-    qtyInput.value = qty;
+    qtyInput.type = 'number'; qtyInput.min = '1'; qtyInput.value = qty;
     qtyInput.className = 'item-qty w-20 p-2 text-right border-b border-gray-200';
-    qtyCell.appendChild(qtyInput);
+    tdQty.appendChild(qtyInput);
 
-    // unit price
-    const priceCell = document.createElement('td');
-    priceCell.className = 'col-unit px-6 py-3 align-top text-right';
+    // price
+    const tdPrice = document.createElement('td');
+    tdPrice.className = 'px-6 py-3 align-top text-right';
     const priceInput = document.createElement('input');
-    priceInput.type = 'number';
-    priceInput.min = '0';
-    priceInput.step = '0.01';
+    priceInput.type = 'number'; priceInput.min = '0'; priceInput.step = '0.01';
     priceInput.value = parseFloat(unitPrice).toFixed(2);
     priceInput.className = 'item-price w-24 p-2 text-right border-b border-gray-200';
-    priceCell.appendChild(priceInput);
+    tdPrice.appendChild(priceInput);
 
     // amount
-    const amountCell = document.createElement('td');
-    amountCell.className = 'col-amount px-6 py-3 align-top text-right font-medium';
-    amountCell.textContent = (qty * unitPrice).toFixed(2);
+    const tdAmount = document.createElement('td');
+    tdAmount.className = 'px-6 py-3 align-top text-right font-medium';
+    tdAmount.textContent = (qty * unitPrice).toFixed(2);
 
     // remove
-    const rmCell = document.createElement('td');
-    rmCell.className = 'px-2 py-3 no-print';
+    const tdRemove = document.createElement('td');
+    tdRemove.className = 'px-2 py-3 no-print';
     const rmBtn = document.createElement('button');
     rmBtn.className = 'text-red-500 hover:text-red-700';
     rmBtn.innerHTML = '✕';
     rmBtn.onclick = () => { tr.remove(); calculateTotal(); };
-    rmCell.appendChild(rmBtn);
+    tdRemove.appendChild(rmBtn);
 
-    // append
-    tr.appendChild(descCell);
-    tr.appendChild(dateCell);
-    tr.appendChild(timeCell);
-    tr.appendChild(qtyCell);
-    tr.appendChild(priceCell);
-    tr.appendChild(amountCell);
-    tr.appendChild(rmCell);
+    tr.appendChild(tdDesc);
+    tr.appendChild(tdDate);
+    tr.appendChild(tdTime);
+    tr.appendChild(tdQty);
+    tr.appendChild(tdPrice);
+    tr.appendChild(tdAmount);
+    tr.appendChild(tdRemove);
     tbody.appendChild(tr);
 
-    // events
-    dateInput.addEventListener('input', () => { updateRowDescriptionText(descDiv, lessonName, dateInput.value, timeInput.value); calculateTotal(); });
-    timeInput.addEventListener('input', () => { updateRowDescriptionText(descDiv, lessonName, dateInput.value, timeInput.value); calculateTotal(); });
-    qtyInput.addEventListener('input', () => { amountCell.textContent = (parseFloat(qtyInput.value||0) * parseFloat(priceInput.value||0)).toFixed(2); calculateTotal(); });
-    priceInput.addEventListener('input', () => { amountCell.textContent = (parseFloat(qtyInput.value||0) * parseFloat(priceInput.value||0)).toFixed(2); calculateTotal(); });
+    // listeners
+    dateInput.addEventListener('input', () => { updateRowDescriptionText(desc, lessonName, dateInput.value, timeInput.value); calculateTotal(); });
+    timeInput.addEventListener('input', () => { updateRowDescriptionText(desc, lessonName, dateInput.value, timeInput.value); calculateTotal(); });
+    qtyInput.addEventListener('input', () => { tdAmount.textContent = (parseFloat(qtyInput.value||0) * parseFloat(priceInput.value||0)).toFixed(2); calculateTotal(); });
+    priceInput.addEventListener('input', () => { tdAmount.textContent = (parseFloat(qtyInput.value||0) * parseFloat(priceInput.value||0)).toFixed(2); calculateTotal(); });
 
     calculateTotal();
     return tr;
   }
 
-  function updateRowDescriptionText(descElement, lessonName, dateISO, timeStr) {
+  function updateRowDescriptionText(el, lessonName, dateISO, timeStr) {
     const parts = [lessonName];
     if (dateISO) {
       try {
@@ -452,7 +397,7 @@ th:nth-child(6), td:nth-child(6) { width: 10%; min-width: 90px; }  /* Amount */
     } else if (timeStr) {
       parts.push(formatTimeTo12H(timeStr));
     }
-    descElement.textContent = parts.join(' – ');
+    el.textContent = parts.join(' – ');
   }
 
   /******************************
@@ -462,7 +407,6 @@ th:nth-child(6), td:nth-child(6) { width: 10%; min-width: 90px; }  /* Amount */
     const price = LESSON_OPTIONS[lessonName] ?? 0.00;
     createRow({ lessonName, dateISO, timeStr, qty: 1, unitPrice: price });
   }
-
   function addSingleLessonFromForm() {
     const lesson = document.getElementById('single-lesson-type').value;
     const date = document.getElementById('single-lesson-date').value;
@@ -471,17 +415,14 @@ th:nth-child(6), td:nth-child(6) { width: 10%; min-width: 90px; }  /* Amount */
     addSingleLesson(lesson, date, time);
     closeSingleForm();
   }
-
   function generateBlockLessons() {
     const lesson = document.getElementById('block-lesson-type').value;
     const startDateISO = document.getElementById('block-start-date').value;
     const time = document.getElementById('block-time').value;
     const weeks = parseInt(document.getElementById('block-weeks').value) || 0;
-
     if (!lesson) { alert('Choose a lesson type'); return; }
     if (!startDateISO) { alert('Choose a start date'); return; }
     if (!weeks || weeks < 1) { alert('Enter number of weeks (>=1)'); return; }
-
     const startDate = new Date(startDateISO + 'T00:00:00');
     for (let i = 0; i < weeks; i++) {
       const d = new Date(startDate);
@@ -489,12 +430,11 @@ th:nth-child(6), td:nth-child(6) { width: 10%; min-width: 90px; }  /* Amount */
       const iso = d.toISOString().split('T')[0];
       addSingleLesson(lesson, iso, time);
     }
-
     closeBlockForm();
   }
 
   /******************************
-   * Totals & travel-per-session
+   * Totals, travel-per-session
    ******************************/
   function calculateTotal() {
     let subtotal = 0;
@@ -507,17 +447,11 @@ th:nth-child(6), td:nth-child(6) { width: 10%; min-width: 90px; }  /* Amount */
       if (amountCell) amountCell.textContent = amount.toFixed(2);
       subtotal += amount;
     });
-
     const lessonCount = rows.length;
     const travelPerSession = parseFloat(document.getElementById('travel-fee').value) || 0;
     const totalTravel = travelPerSession * lessonCount;
-
-    // Update labels & totals display
-    const travelLabel = document.getElementById('travel-fee-label');
-    travelLabel.textContent = `Travel Fee (x${lessonCount} sessions):`;
-
+    document.getElementById('travel-fee-label').textContent = `Travel Fee (x${lessonCount} sessions):`;
     document.getElementById('travel-fee-total').textContent = '£' + totalTravel.toFixed(2);
-
     const grand = subtotal + totalTravel;
     document.getElementById('subtotal').textContent = '£' + subtotal.toFixed(2);
     document.getElementById('grand-total').textContent = '£' + grand.toFixed(2);
@@ -527,10 +461,7 @@ th:nth-child(6), td:nth-child(6) { width: 10%; min-width: 90px; }  /* Amount */
    * Filename helper (earliest lesson date)
    ******************************/
   function getEarliestLessonDateForFilename() {
-    const dateInputs = Array.from(document.querySelectorAll('#item-list input[type="date"]'))
-      .map(i => i.value)
-      .filter(v => v && v.trim().length > 0);
-
+    const dateInputs = Array.from(document.querySelectorAll('#item-list input[type="date"]')).map(i => i.value).filter(v => v && v.trim().length > 0);
     if (dateInputs.length === 0) return null;
     const timestamps = dateInputs.map(s => new Date(s + 'T00:00:00').getTime());
     const minTs = Math.min(...timestamps);
@@ -538,15 +469,11 @@ th:nth-child(6), td:nth-child(6) { width: 10%; min-width: 90px; }  /* Amount */
     return formatDateShortForDisplay(d); // dd/mm/yyyy
   }
 
+  /******************************
+   * Prepare for print: hide empty sections & update descriptions
+   ******************************/
   function prepareForPrint() {
-    const invoiceNo = document.getElementById('invoice-number').value || 'Invoice';
-    const client = document.getElementById('client-name').value || 'Client';
-    const earliest = getEarliestLessonDateForFilename();
-    const fileDate = earliest ? earliest : formatDateShortForDisplay(new Date());
-    const filename = `${client} - ${fileDate} - ${invoiceNo}`;
-    document.title = sanitizeFilenameAllowSlashes(filename);
-
-    // Ensure descriptions reflect latest date/time
+    // Update descriptions from current row date/time
     document.querySelectorAll('#item-list tr').forEach(tr => {
       const descEl = tr.querySelector('.desc-text');
       const lessonName = descEl ? descEl.textContent.split(' – ')[0] : '';
@@ -554,40 +481,60 @@ th:nth-child(6), td:nth-child(6) { width: 10%; min-width: 90px; }  /* Amount */
       const time = tr.querySelector('input[type="time"]').value;
       if (descEl) updateRowDescriptionText(descEl, lessonName, date, time);
     });
-  }
 
-  function triggerPrint() {
-    prepareForPrint();
+    // Hide UI-only and empty sections before printing:
+    // - client-manager is UI-only
+    document.getElementById('client-manager-section').classList.add('hide-for-export');
+
+    // - hide notes section if empty
+    const notesEl = document.getElementById('invoice-notes');
+    if (notesEl && notesEl.value.trim().length === 0) {
+      // hide the whole notes area
+      const notesSection = document.getElementById('notes-section');
+      if (notesSection) notesSection.classList.add('hide-for-export');
+    } else {
+      const notesSection = document.getElementById('notes-section');
+      if (notesSection) notesSection.classList.remove('hide-for-export');
+    }
+
+    // hide interactive controls (buttons/forms) - already no-print but add an extra safety class
+    document.querySelectorAll('.no-print').forEach(n => n.classList.add('hide-for-export'));
+
+    // Set filename in document title
+    const invoiceNo = document.getElementById('invoice-number').value || 'Invoice';
+    const client = document.getElementById('client-name').value || 'Client';
+    const earliest = getEarliestLessonDateForFilename();
+    const fileDate = earliest ? earliest : formatDateShortForDisplay(new Date());
+    const filename = `${client} - ${fileDate} - ${invoiceNo}`;
+    document.title = sanitizeFilenameAllowSlashes(filename);
+
+    // run print
     window.print();
-    setTimeout(() => { document.title = 'Elliot Wardill Invoice Generator'; }, 1000);
+
+    // restore UI after a short delay
+    setTimeout(() => {
+      // remove hide-for-export
+      document.querySelectorAll('.hide-for-export').forEach(el => el.classList.remove('hide-for-export'));
+      // restore title
+      document.title = 'Elliot Wardill Invoice Generator';
+    }, 1000);
   }
 
   /******************************
-   * Initialization
+   * Initialization & helpers
    ******************************/
   function populateLessonSelects() {
     const blockSelect = document.getElementById('block-lesson-type');
     const singleSelect = document.getElementById('single-lesson-type');
-    blockSelect.innerHTML = '';
-    singleSelect.innerHTML = '';
-
+    if (!blockSelect || !singleSelect) return;
+    blockSelect.innerHTML = ''; singleSelect.innerHTML = '';
     const placeholder = document.createElement('option');
-    placeholder.disabled = true;
-    placeholder.selected = true;
-    placeholder.textContent = 'Select Lesson Type';
+    placeholder.disabled = true; placeholder.selected = true; placeholder.textContent = 'Select Lesson Type';
     singleSelect.appendChild(placeholder.cloneNode(true));
     blockSelect.appendChild(placeholder.cloneNode(true));
-
     Object.keys(LESSON_OPTIONS).forEach(name => {
-      const o1 = document.createElement('option');
-      o1.value = name;
-      o1.textContent = name;
-      singleSelect.appendChild(o1);
-
-      const o2 = document.createElement('option');
-      o2.value = name;
-      o2.textContent = name;
-      blockSelect.appendChild(o2);
+      const o1 = document.createElement('option'); o1.value = name; o1.textContent = name; singleSelect.appendChild(o1);
+      const o2 = document.createElement('option'); o2.value = name; o2.textContent = name; blockSelect.appendChild(o2);
     });
   }
 
@@ -596,33 +543,25 @@ th:nth-child(6), td:nth-child(6) { width: 10%; min-width: 90px; }  /* Amount */
     document.getElementById('due-date').value = todayISO;
     document.getElementById('invoice-date').textContent = new Date().toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
     document.getElementById('invoice-number').value = 'EW-' + Math.floor(Math.random()*90000 + 10000);
-
     populateLessonSelects();
-
-    // convenience: add one default row
+    // start with a default row so layout is visible
     addSingleLesson('Standard Lesson (60 Mins)', todayISO, '17:00');
-
-    // Hide add menu when clicking outside
+    // hide add menu when click outside
     document.addEventListener('click', function(e) {
-      const menu = document.getElementById('add-menu');
-      const btn = document.getElementById('add-menu-btn');
-      if (!btn.contains(e.target) && menu && !menu.contains(e.target)) menu.classList.add('hidden');
+      const menu = document.getElementById('add-menu'); const btn = document.getElementById('add-menu-btn');
+      if (menu && btn && !btn.contains(e.target) && !menu.contains(e.target)) menu.classList.add('hidden');
     });
-
-    // Recalculate totals when editing rows directly
-    document.getElementById('item-list').addEventListener('input', function() {
-      calculateTotal();
-    });
+    // recalc totals when editing
+    document.getElementById('item-list').addEventListener('input', function(){ calculateTotal(); });
   };
 </script>
 
-<!-- Firebase module for client saving / loading (fixed storageBucket) -->
+<!-- Firebase client manager (module) - optional: keep if you want saving -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-analytics.js";
   import { getFirestore, collection, addDoc, getDocs, getDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-  // ✅ Use corrected storageBucket (appspot.com)
   const firebaseConfig = {
     apiKey: "AIzaSyDZy7Y40rq-itG6AeZcihtIqVjzvfQqNtY",
     authDomain: "elliotinvoicemanager.firebaseapp.com",
@@ -634,110 +573,85 @@ th:nth-child(6), td:nth-child(6) { width: 10%; min-width: 90px; }  /* Amount */
   };
 
   const app = initializeApp(firebaseConfig);
-  try { getAnalytics(app); } catch (e) { /* ignore analytics errors in some hosts */ }
+  try { getAnalytics(app); } catch(e) { /* ignore */ }
   const db = getFirestore(app);
 
-  // UI helpers for client-manager flows
   function showClientMessage(type, text) {
     const el = document.getElementById('client-msg');
     el.innerHTML = `<div class="msg ${type === 'success' ? 'success' : 'error'}">${text}</div>`;
-    // dismiss automatically after 4s
     setTimeout(() => { if (el) el.innerHTML = ''; }, 4000);
   }
 
-  window.openClientSavePrompt = () => {
-    document.getElementById('save-client-confirm').classList.remove('hidden');
-    document.getElementById('open-save-btn').classList.add('opacity-60');
-  };
-  window.cancelSaveClient = () => {
-    document.getElementById('save-client-confirm').classList.add('hidden');
-    document.getElementById('open-save-btn').classList.remove('opacity-60');
-  };
+  window.openClientSavePrompt = () => { document.getElementById('save-client-confirm').classList.remove('hidden'); document.getElementById('open-save-btn').classList.add('opacity-60'); };
+  window.cancelSaveClient = () => { document.getElementById('save-client-confirm').classList.add('hidden'); document.getElementById('open-save-btn').classList.remove('opacity-60'); };
 
   window.confirmSaveClient = async () => {
     const name = document.getElementById("client-name").value.trim();
     const address = document.getElementById("client-address").value.trim();
-    if (!name) return showClientMessage('error', 'Please enter a client name before saving.');
-
+    if (!name) return showClientMessage('error','Enter client name before saving.');
     try {
-      // write to Firestore
       await addDoc(collection(db, "clients"), { name, address, createdAt: new Date().toISOString() });
       showClientMessage('success', `Saved "${name}"`);
       cancelSaveClient();
       await loadClients();
-      // auto-select the newly saved client (match by name)
+      // auto-select saved client
       const dropdown = document.getElementById("saved-clients");
-      for (const opt of Array.from(dropdown.options)) {
-        if (opt.textContent === name) { dropdown.value = opt.value; break; }
-      }
-    } catch (err) {
-      console.error("Error saving client:", err);
-      showClientMessage('error', 'Error saving client. Check console.');
+      for (const opt of Array.from(dropdown.options)) { if (opt.textContent === name) { dropdown.value = opt.value; break; } }
+    } catch(err) {
+      console.error(err);
+      showClientMessage('error','Error saving client (see console).');
     }
   };
 
   window.loadClients = async () => {
-    const dropdown = document.getElementById("saved-clients");
-    if (!dropdown) return;
-    dropdown.innerHTML = '<option value="">Select Existing Client</option>';
-
+    const dd = document.getElementById('saved-clients');
+    if (!dd) return;
+    dd.innerHTML = '<option value="">Select Existing Client</option>';
     try {
       const snapshot = await getDocs(collection(db, "clients"));
       snapshot.forEach(docSnap => {
-        const data = docSnap.data();
-        const opt = document.createElement("option");
-        opt.value = docSnap.id;
-        opt.textContent = data.name;
-        dropdown.appendChild(opt);
+        const d = docSnap.data();
+        const opt = document.createElement('option'); opt.value = docSnap.id; opt.textContent = d.name;
+        dd.appendChild(opt);
       });
-    } catch (err) {
-      console.error("Error loading clients:", err);
-      showClientMessage('error', 'Error loading clients (console).');
-    }
+    } catch(err) { console.error('Error loading clients:', err); showClientMessage('error','Error loading clients'); }
   };
 
   window.loadClient = async () => {
-    const id = document.getElementById("saved-clients").value;
+    const id = document.getElementById('saved-clients').value;
     if (!id) return;
     try {
-      const docSnap = await getDoc(doc(db, "clients", id));
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        document.getElementById("client-name").value = data.name || "";
-        document.getElementById("client-address").value = data.address || "";
+      const snap = await getDoc(doc(db, 'clients', id));
+      if (snap.exists()) {
+        const data = snap.data();
+        document.getElementById('client-name').value = data.name || '';
+        document.getElementById('client-address').value = data.address || '';
         showClientMessage('success', `Loaded "${data.name}"`);
-      } else {
-        showClientMessage('error', 'Selected client not found.');
       }
-    } catch (err) {
-      console.error("Error loading client:", err);
-      showClientMessage('error', 'Error loading client (console).');
-    }
+    } catch(err) { console.error(err); showClientMessage('error','Error loading client'); }
   };
 
   window.deleteClient = async () => {
-    const id = document.getElementById("saved-clients").value;
-    if (!id) return showClientMessage('error', 'Select a client first');
+    const id = document.getElementById('saved-clients').value;
+    if (!id) return showClientMessage('error','Select a client first');
     if (!confirm('Delete this client permanently?')) return;
     try {
-      await deleteDoc(doc(db, "clients", id));
-      showClientMessage('success', 'Client deleted');
+      await deleteDoc(doc(db,'clients',id));
+      showClientMessage('success','Client deleted');
       await loadClients();
-      // clear bill-to fields if deleted client was loaded
-      document.getElementById("client-name").value = '';
-      document.getElementById("client-address").value = '';
-    } catch (err) {
-      console.error("Error deleting client:", err);
-      showClientMessage('error', 'Error deleting client (console).');
-    }
+      document.getElementById('client-name').value = '';
+      document.getElementById('client-address').value = '';
+    } catch(err) { console.error(err); showClientMessage('error','Error deleting client'); }
   };
 
-  // expose confirmSaveClient/cancel for inline buttons
+  // expose for inline onclicks
   window.confirmSaveClient = window.confirmSaveClient;
   window.cancelSaveClient = window.cancelSaveClient;
+  window.loadClients = window.loadClients;
+  window.loadClient = window.loadClient;
+  window.deleteClient = window.deleteClient;
 
-  // load clients on DOM ready
-  window.addEventListener("DOMContentLoaded", loadClients);
+  window.addEventListener('DOMContentLoaded', loadClients);
 </script>
 
 </body>

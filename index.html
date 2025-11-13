@@ -587,15 +587,16 @@
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-analytics.js";
   import { getFirestore, collection, addDoc, getDocs, getDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyDZy7Y40rq-itG6AeZcihtIqVjzvfQqNtY",
-    authDomain: "elliotinvoicemanager.firebaseapp.com",
-    projectId: "elliotinvoicemanager",
-    storageBucket: "elliotinvoicemanager.firebasestorage.app",
-    messagingSenderId: "722602611594",
-    appId: "1:722602611594:web:06c8159a236777d1f8ae73",
-    measurementId: "G-R81851NH79"
-  };
+// ✅ Corrected Firebase Config
+const firebaseConfig = {
+  apiKey: "AIzaSyDZy7Y40rq-itG6AeZcihtIqVjzvfQqNtY",
+  authDomain: "elliotinvoicemanager.firebaseapp.com",
+  projectId: "elliotinvoicemanager",
+  storageBucket: "elliotinvoicemanager.appspot.com", // ✅ FIXED
+  messagingSenderId: "722602611594",
+  appId: "1:722602611594:web:06c8159a236777d1f8ae73",
+  measurementId: "G-R81851NH79"
+};
 
   const app = initializeApp(firebaseConfig);
   // analytics optional

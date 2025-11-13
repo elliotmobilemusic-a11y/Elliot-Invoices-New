@@ -5,59 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Elliot Wardill Invoice Generator</title>
     <link rel="icon" type="image/png" href="i-favicon.png">
-
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Custom styles for printing */
         @media print {
-            body {
-                background: white;
-                font-size: 10pt;
-            }
-            /* Hide controls when printing */
-            .no-print {
-                display: none !important;
-            }
-            .invoice-container {
-                box-shadow: none !important;
-                border: none !important;
-                margin: 0;
-                padding: 0;
-            }
-            /* Ensure text is black for clarity */
-            .text-gray-700, .text-gray-900 {
-                color: #000 !important;
-            }
+            body { background: white; font-size: 10pt; }
+            .no-print { display: none !important; }
+            .invoice-container { box-shadow: none !important; border: none !important; margin: 0; padding: 0; }
+            .text-gray-700, .text-gray-900 { color: #000 !important; }
         }
-        /* Inter font for a clean, modern look */
-        body {
-            font-family: "Inter", sans-serif;
-            background-color: #f7f9fb;
-        }
-        .invoice-container {
-            max-width: 800px;
-            margin: 2rem auto;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 0px 10px -5px rgba(0, 0, 0, 0.04);
-            padding: 2.5rem;
-            border: 1px solid #e5e7eb;
-        }
+        body { font-family: 'Inter', sans-serif; background-color: #f7f9fb; }
+        .invoice-container { max-width: 800px; margin: 2rem auto; background: white; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); padding: 2.5rem; border: 1px solid #e5e7eb; }
     </style>
 </head>
 <body>
 
 <div class="invoice-container" id="invoice-document">
-
-    <!-- Invoice Header -->
     <header class="flex justify-between items-center pb-6 border-b border-indigo-200">
         <div>
             <h1 class="text-3xl font-extrabold text-indigo-700">INVOICE</h1>
             <div class="mt-2 flex items-center space-x-2 text-sm text-gray-500">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 <span id="invoice-date">October 18, 2025</span>
             </div>
         </div>
@@ -69,337 +36,163 @@
         </div>
     </header>
 
-    <!-- Client and Invoice Details -->
     <section class="py-6 border-b border-gray-100 grid grid-cols-2 gap-4 text-sm">
         <div>
             <h3 class="font-semibold text-gray-700 mb-2">BILL TO:</h3>
-            <input id="client-name" type="text" placeholder="Client Name" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 mb-1">
-            <input id="client-address" type="text" placeholder="Address, Postcode" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+            <input id="client-name" type="text" placeholder="Client Name" class="w-full p-2 border border-gray-300 rounded-lg mb-1">
+            <input id="client-address" type="text" placeholder="Address, Postcode" class="w-full p-2 border border-gray-300 rounded-lg">
         </div>
         <div class="text-right">
-            <h3 class="font-semibold text-gray-700 mb-2">INVOICE NO:</h3>
-            <input id="invoice-number" type="text" value="EW-" class="w-32 p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-right">
-            <p class="mt-3 text-gray-500">DUE DATE: <input id="due-date" type="date" class="border border-gray-300 rounded-lg p-1"></p>
+            <h3 class="font-semibold text-gray-700 mb-2">INVOICE DETAILS:</h3>
+            <input id="invoice-number" type="text" value="EW-" class="w-32 p-2 border border-gray-300 rounded-lg text-right mb-2">
+            <div class="text-sm text-gray-500">DUE DATE: <input id="due-date" type="date" class="border border-gray-300 rounded-lg p-1"></div>
+            <div class="text-sm text-gray-500 mt-1">LESSON DATE: <input id="lesson-date" type="date" class="border border-gray-300 rounded-lg p-1"></div>
+            <div class="text-sm text-gray-500 mt-1">LESSON TIME: <input id="lesson-time" type="time" class="border border-gray-300 rounded-lg p-1"></div>
         </div>
     </section>
 
-    <!-- Line Items Table -->
     <section class="mt-8">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-indigo-50">
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/3">Description (Lesson Type / Date)</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">Qty (Units/Hours)</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">Unit Price (£)</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">Amount (£)</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price (£)</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount (£)</th>
                 </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200" id="item-list">
-                <!-- Initial Item (Will be populated by JS) -->
-            </tbody>
+            <tbody id="item-list"></tbody>
         </table>
-
-        <!-- Add Item Button -->
         <div class="no-print mt-4 flex justify-between">
-            <button onclick="addItem()" class="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition duration-150 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
-                </svg>
-                Add Lesson
-            </button>
+            <button onclick="addItem()" class="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600">Add Lesson</button>
         </div>
     </section>
 
-    <!-- Totals Section -->
     <section class="mt-8 flex justify-end">
-        <div class="w-full md:w-1/2">
-            <div class="space-y-2">
-                <div class="flex justify-between items-center text-sm font-medium text-gray-700">
-                    <span>Subtotal:</span>
-                    <span id="subtotal" class="font-semibold text-gray-900">£0.00</span>
-                </div>
-
-                <!-- Travel Fee (Custom Input) -->
-                <div class="flex justify-between items-center text-sm font-medium text-gray-700 py-2 border-t border-gray-100">
-                    <div class="flex flex-col text-left">
-                        <label for="travel-fee" class="text-sm font-semibold">Travel Fee (Postcode Zone)</label>
-                        <span class="text-xs text-indigo-500 mt-1">Check policy for 5, 10, 15+ mile rates.</span>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                        <span>£</span>
-                        <input id="travel-fee" type="number" value="0.00" min="0" step="5.00" class="w-20 p-1 text-right border border-gray-300 rounded-lg" oninput="calculateTotal()">
-                    </div>
-                </div>
-
-                <!-- Grand Total -->
-                <div class="flex justify-between items-center text-lg font-bold text-gray-800 pt-4 border-t-4 border-indigo-500">
-                    <span>GRAND TOTAL DUE:</span>
-                    <span id="grand-total" class="text-indigo-700">£0.00</span>
-                </div>
+        <div class="w-full md:w-1/2 space-y-3">
+            <div class="flex justify-between text-sm font-medium text-gray-700">
+                <span>Subtotal:</span>
+                <span id="subtotal">£0.00</span>
+            </div>
+            <div class="flex justify-between items-center text-sm font-medium text-gray-700 border-t pt-2">
+                <label for="travel-fee">Travel Fee (Distance)</label>
+                <select id="travel-fee" onchange="calculateTotal()" class="border border-gray-300 rounded-lg p-1">
+                    <option value="0">Within 5 miles – £0</option>
+                    <option value="5">5 miles+ – £5</option>
+                    <option value="10">10 miles+ – £10</option>
+                    <option value="25">15 miles+ – £25</option>
+                </select>
+            </div>
+            <div class="flex justify-between items-center text-lg font-bold text-gray-800 border-t-4 border-indigo-500 pt-4">
+                <span>GRAND TOTAL:</span>
+                <span id="grand-total">£0.00</span>
             </div>
         </div>
     </section>
 
-    <!-- Notes and Payment Details -->
-    <section class="mt-12 pt-6 border-t border-gray-200 grid md:grid-cols-2 gap-8 text-sm">
+    <section class="mt-10 pt-6 border-t border-gray-200 grid md:grid-cols-2 gap-8 text-sm">
+        <div>
+            <h3 class="font-semibold text-gray-700 mb-2">BLOCK BOOKING:</h3>
+            <label class="block mb-1 text-gray-600">Start Date</label>
+            <input type="date" id="block-start" class="w-full p-2 border border-gray-300 rounded-lg mb-2" oninput="updateBlockEnd()">
+            <label class="block mb-1 text-gray-600">Number of Weeks</label>
+            <input type="number" id="block-weeks" min="1" class="w-full p-2 border border-gray-300 rounded-lg mb-2" oninput="updateBlockEnd()">
+            <p class="mt-2 text-gray-700">Block End Date: <span id="block-end" class="font-semibold">–</span></p>
+            <input type="text" id="installment-note" placeholder="e.g., Payment 1 of 3" class="w-full p-2 border border-gray-300 rounded-lg mt-2">
+        </div>
         <div>
             <h3 class="font-semibold text-gray-700 mb-2">NOTES:</h3>
-            <textarea id="invoice-notes" rows="3" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g., Payment due upon receipt. Next lesson booked for..."></textarea>
-            <p class="mt-4 text-xs text-gray-500">Thank you for choosing Elliot Wardill Mobile Music Lessons!</p>
+            <textarea id="invoice-notes" rows="4" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="Additional details or notes"></textarea>
         </div>
-        <div>
-            <h3 class="font-semibold text-gray-700 mb-2">PAYMENT DETAILS (Bank Transfer):</h3>
-            <p class="text-gray-600">**Payment is preferred via Bank Transfer**</p>
-            <!-- >>>>> EDIT THIS SECTION WITH YOUR BANK DETAILS IN GITHUB <<<<< -->
-            <p class="text-gray-900 font-medium mt-2">Account Name: Elliot Wardill</p>
-            <p class="text-gray-900 font-medium">Sort Code: 56-00-36</p>
-            <p class="text-gray-900 font-medium">Account No: 40013987</p>
-            <!-- >>>>> END OF BANK DETAILS SECTION <<<<< -->
-        </div>
+    </section>
+
+    <section class="mt-10 border-t border-gray-200 pt-6 text-sm">
+        <h3 class="font-semibold text-gray-700 mb-2">PAYMENT DETAILS:</h3>
+        <p>Preferred: Bank Transfer</p>
+        <p>Account Name: Elliot Wardill</p>
+        <p>Sort Code: 56-00-36</p>
+        <p>Account No: 40013987</p>
     </section>
 </div>
 
-<!-- Control Buttons (No Print) -->
 <div class="no-print text-center py-6">
-    <button onclick="window.print()" class="px-8 py-3 bg-indigo-700 text-white font-bold rounded-lg shadow-lg hover:bg-indigo-800 transition duration-150">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm1-9V3a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1v-2h-2z" />
-        </svg>
-        Print / Save as PDF
-    </button>
+    <button onclick="window.print()" class="px-8 py-3 bg-indigo-700 text-white font-bold rounded-lg hover:bg-indigo-800">Print / Save as PDF</button>
 </div>
 
 <script>
-    // --- LESSON DATA CONFIGURATION ---
-    // Price for Cancellation Fee is set to 0.00 as it will be determined by the secondary selector.
     const LESSON_OPTIONS = {
         'Standard Lesson (30 Mins)': 15.00,
         'Standard Lesson (60 Mins)': 30.00,
         'Standard Lesson (120 Mins)': 50.00,
         'Introductory Lesson': 10.00,
-        'Free Taster Session': 0.00, // New free option
-        'Cancellation Fee (24 Hour Policy)': 0.00, // Dynamic price
-        'Custom Item': 0.00
+        'Free Taster Session': 0.00
     };
 
-    // Helper data structure for cancellation types
-    const DURATION_LESSONS = {
-        '30 Mins Missed Lesson': LESSON_OPTIONS['Standard Lesson (30 Mins)'],
-        '60 Mins Missed Lesson': LESSON_OPTIONS['Standard Lesson (60 Mins)'],
-        '120 Mins Missed Lesson': LESSON_OPTIONS['Standard Lesson (120 Mins)'],
-    };
-
-    // Helper function to create the dropdown HTML for a row
-    function createLessonSelect(defaultOption) {
-        // Use flex-col and space-y-1 to stack and separate dynamic elements cleanly
-        let html = '<div class="flex flex-col space-y-1">';
-
-        // 1. Main Select (Always visible)
-        let selectHtml = `<select onchange="updatePrice(this)" class="lesson-select w-full p-1 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-sm">`;
-        
-        selectHtml += `<option value="" disabled selected>Select Lesson Type / Item</option>`;
-
-        for (const [description, price] of Object.entries(LESSON_OPTIONS)) {
-            const selected = description === defaultOption ? 'selected' : '';
-            // Store the price value in the data-price attribute
-            selectHtml += `<option value="${description}" data-price="${price.toFixed(2)}" ${selected}>${description}</option>`;
-        }
-        selectHtml += `</select>`;
-        html += selectHtml;
-
-        // 2. CANCELLATION TYPE SELECT (Hidden by default, no mt-1 needed due to space-y-1 parent)
-        let cancellationHtml = `<select onchange="updateCancellationType(this)" class="cancellation-select w-full p-1 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-sm hidden">`;
-        cancellationHtml += `<option value="" disabled selected>Select Missed Lesson Duration</option>`;
-        
-        for (const [duration, price] of Object.entries(DURATION_LESSONS)) {
-            cancellationHtml += `<option value="${duration}" data-price="${price.toFixed(2)}">${duration}</option>`;
-        }
-        cancellationHtml += `</select>`;
-        html += cancellationHtml;
-        
-        // 3. CUSTOM DESCRIPTION INPUT (Hidden by default, no mt-1 needed due to space-y-1 parent)
-        let customInputHtml = `<input type="text" placeholder="Enter custom description" class="custom-description w-full p-1 border-b border-gray-300 focus:border-indigo-500 hidden">`;
-        html += customInputHtml;
-
-        html += '</div>'; // Close the wrapper div
-        
-        return html;
-    }
-
-    // Function to handle the change in the CANCELLATION TYPE dropdown
-    function updateCancellationType(selectElement) {
-        const row = selectElement.closest('.item-row');
-        const priceInput = row.querySelector('.item-price');
-        
-        const selectedElement = selectElement.options[selectElement.selectedIndex];
-        const newPrice = selectedElement.getAttribute('data-price');
-        
-        // Set the new price
-        priceInput.value = parseFloat(newPrice).toFixed(2);
-
-        // Ensure description is updated for print
-        const printDescCell = row.querySelector('[data-col="description"]');
-        const mainSelect = row.querySelector('.lesson-select');
-        if (printDescCell) {
-            printDescCell.textContent = `${mainSelect.value} - ${selectElement.value}`;
-        }
-        
-        calculateTotal();
-    }
-
-
-    // Function to handle the change in the MAIN LESSON dropdown
-    function updatePrice(selectElement) {
-        const row = selectElement.closest('.item-row');
-        const priceInput = row.querySelector('.item-price');
-        const customInput = row.querySelector('.custom-description');
-        const cancelSelect = row.querySelector('.cancellation-select');
-        const selectedOption = selectElement.value;
-
-        const selectedElement = selectElement.options[selectElement.selectedIndex];
-        const newPrice = selectedElement.getAttribute('data-price');
-        
-        // Update price input
-        priceInput.value = parseFloat(newPrice).toFixed(2);
-        
-        // Handle CANCELLATION FEE visibility
-        if (selectedOption === 'Cancellation Fee (24 Hour Policy)') {
-            cancelSelect.classList.remove('hidden');
-            customInput.classList.add('hidden');
-            
-            // Reset price to 0 and force user to select a lesson type
-            priceInput.value = '0.00'; 
-            cancelSelect.selectedIndex = 0; 
-            
-            // Set initial description for print
-            const printDescCell = row.querySelector('[data-col="description"]');
-            if (printDescCell) {
-                printDescCell.textContent = 'Cancellation Fee (24 Hour Policy)';
-            }
-
-        } 
-        // Handle CUSTOM ITEM visibility
-        else if (selectedOption === 'Custom Item') {
-            customInput.classList.remove('hidden');
-            cancelSelect.classList.add('hidden');
-            customInput.value = '';
-            priceInput.value = '0.00'; 
-        } 
-        // Handle STANDARD LESSONS (default behavior) and the new Free Taster
-        else {
-            customInput.classList.add('hidden');
-            cancelSelect.classList.add('hidden');
-        }
-
-        calculateTotal();
-    }
-
-
-    // Adds a new blank line item row to the invoice
-    function addItem(defaultOption) {
+    function addItem(defaultOption='Standard Lesson (60 Mins)') {
         const list = document.getElementById('item-list');
         const newRow = document.createElement('tr');
+        const defaultPrice = LESSON_OPTIONS[defaultOption];
         newRow.className = 'item-row';
-        
-        // Default to 60 Mins
-        const defaultKey = defaultOption || 'Standard Lesson (60 Mins)';
-        const defaultPrice = LESSON_OPTIONS[defaultKey];
-
-        const selectHtml = createLessonSelect(defaultKey);
-
         newRow.innerHTML = `
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 no-print">
-                ${selectHtml}
+            <td class="px-6 py-4">
+                <select onchange="updatePrice(this)" class="lesson-select w-full p-1 border border-gray-300 rounded-lg">
+                    ${Object.entries(LESSON_OPTIONS).map(([name,price])=>`<option value="${price}">${name}</option>`).join('')}
+                </select>
             </td>
-            <!-- DESCRIPTION (Hidden for print, value is combined from select/custom) -->
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 print-only" data-col="description">${defaultKey}</td>
-
-            <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500">
-                <input type="number" value="1" min="1" class="item-qty w-16 p-1 text-right border-b border-gray-300" oninput="calculateTotal()">
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500">
-                <input type="number" value="${defaultPrice.toFixed(2)}" min="0" step="0.01" class="item-price w-20 p-1 text-right border-b border-gray-300" oninput="calculateTotal()">
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-gray-900 total-amount">0.00</td>
-            <td class="px-2 py-4 no-print">
-                <button onclick="removeItem(this)" class="text-red-500 hover:text-red-700 transition duration-150">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 011-1h4a1 1 0 110 2H8a1 1 0 01-1-1z" clip-rule="evenodd" />
-                    </svg>
-                </button>
-            </td>
-        `;
+            <td class="px-6 py-4 text-right"><input type="number" value="1" min="1" class="item-qty w-16 p-1 text-right border-b border-gray-300" oninput="calculateTotal()"></td>
+            <td class="px-6 py-4 text-right"><input type="number" value="${defaultPrice}" min="0" step="0.01" class="item-price w-20 p-1 text-right border-b border-gray-300" oninput="calculateTotal()"></td>
+            <td class="px-6 py-4 text-right total-amount">${defaultPrice.toFixed(2)}</td>
+            <td class="px-2 py-4 no-print"><button onclick="removeItem(this)" class="text-red-500">✕</button></td>`;
         list.appendChild(newRow);
-        calculateTotal(); 
-    }
-
-    // Removes a line item row
-    function removeItem(button) {
-        const row = button.closest('.item-row');
-        row.remove();
         calculateTotal();
     }
 
-    // Calculates all totals on the invoice
-    function calculateTotal() {
-        const rows = document.querySelectorAll('.item-row');
-        let subtotal = 0;
+    function updatePrice(select) {
+        const row = select.closest('tr');
+        const price = parseFloat(select.value);
+        row.querySelector('.item-price').value = price.toFixed(2);
+        calculateTotal();
+    }
 
-        rows.forEach(row => {
+    function removeItem(btn) {
+        btn.closest('tr').remove();
+        calculateTotal();
+    }
+
+    function calculateTotal() {
+        let subtotal = 0;
+        document.querySelectorAll('.item-row').forEach(row => {
             const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
             const price = parseFloat(row.querySelector('.item-price').value) || 0;
             const total = qty * price;
-            
-            // Handle Description for Print/PDF
-            const select = row.querySelector('.lesson-select');
-            const customDescInput = row.querySelector('.custom-description');
-            const cancelSelect = row.querySelector('.cancellation-select');
-            const printDescCell = row.querySelector('[data-col="description"]');
-
-            if (printDescCell && select) {
-                const mainSelection = select.value;
-                if (mainSelection === 'Cancellation Fee (24 Hour Policy)' && cancelSelect.value) {
-                    // Combine main title with the selected cancellation type
-                    printDescCell.textContent = `${mainSelection} - ${cancelSelect.value}`;
-                } else if (mainSelection === 'Custom Item') {
-                    // Use custom text
-                    printDescCell.textContent = customDescInput.value.trim() || 'Custom Item (Description Missing)';
-                } else {
-                    // Use the standard selected option
-                    printDescCell.textContent = mainSelection;
-                }
-            }
-
-
             row.querySelector('.total-amount').textContent = total.toFixed(2);
             subtotal += total;
         });
-
-        // Get travel fee
         const travelFee = parseFloat(document.getElementById('travel-fee').value) || 0;
-
-        // Calculate grand total
-        const grandTotal = subtotal + travelFee;
-
-        // Update display fields
+        const grand = subtotal + travelFee;
         document.getElementById('subtotal').textContent = '£' + subtotal.toFixed(2);
-        document.getElementById('grand-total').textContent = '£' + grandTotal.toFixed(2);
+        document.getElementById('grand-total').textContent = '£' + grand.toFixed(2);
     }
 
-    // Set initial date, invoice number, and add one default item
-    window.onload = function() {
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('invoice-date').textContent = new Date().toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
-        document.getElementById('due-date').value = today; // Default due date is today
-        document.getElementById('invoice-number').value = "EW-" + Math.floor(Math.random() * 90000 + 10000); // Simple random starting number
-        
-        // Add one default row
-        addItem('Standard Lesson (60 Mins)');
-        
-        // Attach listener to travel fee input
-        document.getElementById('travel-fee').addEventListener('input', calculateTotal);
-    };
+    function updateBlockEnd() {
+        const start = document.getElementById('block-start').value;
+        const weeks = parseInt(document.getElementById('block-weeks').value) || 0;
+        if(start && weeks>0){
+            const startDate = new Date(start);
+            startDate.setDate(startDate.getDate() + (weeks*7));
+            document.getElementById('block-end').textContent = startDate.toLocaleDateString('en-GB');
+        } else {
+            document.getElementById('block-end').textContent = '–';
+        }
+    }
 
+    window.onload = function(){
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('due-date').value = today;
+        document.getElementById('invoice-date').textContent = new Date().toLocaleDateString('en-GB',{year:'numeric',month:'long',day:'numeric'});
+        document.getElementById('invoice-number').value = 'EW-' + Math.floor(Math.random()*90000+10000);
+        addItem();
+    }
 </script>
 </body>
 </html>

@@ -7,20 +7,34 @@
   <link rel="icon" type="image/png" href="i-favicon.png">
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <style>
-    /* Print styles (optimized for Chrome -> Save as PDF) */
-    @media print {
-      body { background: white; font-size: 10pt; }
-      .no-print { display: none !important; }
-      .invoice-container { box-shadow: none !important; border: none !important; margin: 0; padding: 0; }
-      .text-gray-700, .text-gray-900 { color: #000 !important; }
-      thead { display: table-header-group; } /* ensure header repeats on pages */
-      /* keep the table readable in print */
-      table { width: 100%; border-collapse: collapse; }
-      input { border: none !important; box-shadow: none !important; }
-      /* avoid page breaks inside rows */
-      tr { page-break-inside: avoid; }
-    }
+/* --- FIX: Lesson Table Layout for Print & Screen --- */
+table {
+  table-layout: fixed;
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* Make description flexibly large, allow wrapping */
+th:nth-child(1), td:nth-child(1) {
+  width: 45%;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* Fixed widths for others */
+th:nth-child(2), td:nth-child(2) { width: 12%; min-width: 100px; } /* Date */
+th:nth-child(3), td:nth-child(3) { width: 10%; min-width: 90px; }  /* Time */
+th:nth-child(4), td:nth-child(4) { width: 7%; min-width: 70px; }   /* Qty */
+th:nth-child(5), td:nth-child(5) { width: 10%; min-width: 90px; }  /* Unit */
+th:nth-child(6), td:nth-child(6) { width: 10%; min-width: 90px; }  /* Amount */
+
+/* Print safety margin */
+@media print {
+  body {
+    margin: 0.5cm;
+    zoom: 0.95; /* slight shrink to prevent clipping */
+  }
 
     /* Page background & container */
     body { font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background-color: #eef2ff; } /* indigo-50 */

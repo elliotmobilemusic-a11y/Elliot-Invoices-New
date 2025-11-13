@@ -1,643 +1,311 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Elliot Wardill Invoice Generator</title>
-  <link rel="icon" type="image/png" href="i-favicon.png">
-  <script src="https://cdn.tailwindcss.com"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elliot Wardill Invoice Generator</title>
+    <link rel="icon" type="image/png" href="i-favicon.png">
 
-  <style>
-    /* ---------- Print styling (Chrome -> Save as PDF tuned) ---------- */
-    @media print {
-      body { background: white; font-size: 10pt; margin: 0.5cm; }
-      .no-print { display: none !important; }
-      .invoice-container { box-shadow: none !important; border: none !important; margin: 0; padding: 0; }
-      .text-gray-700, .text-gray-900 { color: #000 !important; }
-      thead { display: table-header-group; } /* ensure header repeats */
-      table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-      input, textarea, select, button { border: none !important; box-shadow: none !important; }
-      tr { page-break-inside: avoid; }
-      .hide-for-export { display: none !important; } /* explicit hide class during export */
-    }
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
 
-    /* ---------- Page visuals ---------- */
-    body { font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background-color: #eef2ff; }
-    .invoice-wrapper { max-width: 1100px; margin: 2.5rem auto; padding: 1rem; }
-    .invoice-container { background: white; border-radius: 1rem; padding: 1.25rem; box-shadow: 0 8px 24px rgba(15,23,42,0.06); border: 1px solid rgba(79,70,229,0.06); }
-    .card { border-radius: 0.75rem; }
-    .btn { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+    <style>
+        /* Print styles */
+        @media print {
+            body {
+                background: white;
+                font-size: 10pt;
+            }
 
-    /* ---------- Table fixed layout rules (no qty) ---------- */
-    table { table-layout: fixed; width: 100%; }
-    /* Columns: Description | Date | Time | Unit | Amount */
-    th:nth-child(1), td:nth-child(1) { width: 55%; white-space: normal; word-wrap: break-word; overflow-wrap: anywhere; }
-    th:nth-child(2), td:nth-child(2) { width: 13%; min-width: 100px; }
-    th:nth-child(3), td:nth-child(3) { width: 12%; min-width: 95px; }
-    th:nth-child(4), td:nth-child(4) { width: 10%; min-width: 80px; }
-    th:nth-child(5), td:nth-child(5) { width: 10%; min-width: 90px; }
+            .no-print {
+                display: none !important;
+            }
 
-    .desc-text { line-height: 1.25; display: block; }
+            .invoice-container {
+                box-shadow: none !important;
+                border: none !important;
+                margin: 0;
+                padding: 0;
+            }
 
-    /* small client message */
-    .msg { padding: 0.5rem 0.75rem; border-radius: 8px; font-size: 0.95rem; }
-    .msg.success { background: #ecfccb; color: #166534; border: 1px solid #bbf7d0; }
-    .msg.error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+            .text-gray-700,
+            .text-gray-900 {
+                color: #000 !important;
+            }
+        }
 
-    @media (max-width: 640px) {
-      .desc-text { max-width: 18rem; }
-      .invoice-container { padding: 1rem; }
-      th, td { padding-left: 0.6rem; padding-right: 0.6rem; }
-      .btn { width: 100%; }
-    }
-  </style>
+        body {
+            font-family: "Inter", sans-serif;
+            background-color: #f7f9fb;
+        }
+
+        .invoice-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1),
+                        0 0px 10px -5px rgba(0, 0, 0, 0.04);
+            padding: 2.5rem;
+            border: 1px solid #e5e7eb;
+        }
+    </style>
 </head>
+
 <body>
 
-<div class="invoice-wrapper">
-  <div class="invoice-container card">
+<div class="invoice-container" id="invoice-document">
 
-    <!-- HEADER (visible in export) -->
-    <header class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start pb-4 border-b border-indigo-100">
-      <div>
-        <h1 class="text-4xl md:text-5xl font-extrabold text-indigo-700 tracking-tight">INVOICE</h1>
-        <div class="mt-3 flex items-center text-sm text-indigo-600">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V8H3v11a2 2 0 002 2z"/>
-          </svg>
-          <span id="invoice-date" class="font-medium"></span>
+    <!-- Header -->
+    <header class="flex justify-between items-center pb-6 border-b border-indigo-200">
+        <div>
+            <h1 class="text-3xl font-extrabold text-indigo-700">INVOICE</h1>
+            <div class="mt-2 flex items-center space-x-2 text-sm text-gray-500">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     class="h-4 w-4 text-indigo-500" fill="none"
+                     viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                     <path stroke-linecap="round" stroke-linejoin="round"
+                           d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span id="invoice-date"></span>
+            </div>
         </div>
-      </div>
 
-      <div class="text-left md:text-right">
-        <div class="font-semibold text-lg text-gray-800">Elliot Wardill Mobile Music Lessons</div>
-        <div class="text-sm text-gray-600 mt-1">Pudsey, UK</div>
-        <div class="text-sm text-gray-600">elliotmobilemusic@gmail.com</div>
-        <div class="text-sm text-gray-600">07368 975144</div>
-      </div>
+        <div class="text-right">
+            <h2 class="text-xl font-semibold text-gray-900">Elliot Wardill Mobile Music Lessons</h2>
+            <p class="text-sm text-gray-600">Pudsey, UK</p>
+            <p class="text-sm text-gray-600">Email: elliotmobilemusic@gmail.com</p>
+            <p class="text-sm text-gray-600">Phone: 07368 975144</p>
+        </div>
     </header>
 
-    <!-- CLIENT MANAGER (UI only: hidden in export) -->
-    <section id="client-manager-section" class="mt-6 no-print">
-      <div class="p-4 rounded-lg bg-indigo-50 border border-indigo-100 card">
-        <h3 class="text-sm font-semibold text-indigo-800 mb-3">Client Manager</h3>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <select id="saved-clients" onchange="loadClient()" class="p-3 border border-indigo-100 rounded-lg sm:col-span-2">
-            <option value="">Select Existing Client</option>
-          </select>
-          <div class="flex gap-2 sm:justify-end">
-            <button id="open-save-btn" onclick="openClientSavePrompt()" class="btn px-4 py-2 bg-indigo-700 text-white rounded-lg hover:bg-indigo-800">+ Save Client</button>
-            <button onclick="deleteClient()" class="btn px-4 py-2 border rounded-lg">Delete</button>
-          </div>
-        </div>
-
-        <div id="save-client-confirm" class="hidden mt-4 bg-white p-3 rounded-lg border border-indigo-100">
-          <p class="text-sm text-gray-700 mb-3">Save the current client details?</p>
-          <div class="flex gap-2">
-            <button id="confirm-save-btn" onclick="confirmSaveClient()" class="btn px-4 py-2 bg-indigo-700 text-white rounded-lg">Save</button>
-            <button onclick="cancelSaveClient()" class="btn px-4 py-2 border rounded-lg">Cancel</button>
-          </div>
-        </div>
-
-        <div id="client-msg" class="mt-3" aria-live="polite"></div>
-      </div>
-    </section>
-
-    <!-- BILL TO & INVOICE DETAILS (visible in export) -->
-    <section class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div id="billto-section" class="p-4 bg-white card border border-indigo-50">
-        <h3 class="text-sm font-semibold text-gray-700 mb-2">BILL TO:</h3>
-        <input id="client-name" type="text" placeholder="Client Full Name" class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-200 mb-3" />
-        <input id="client-address" type="text" placeholder="Address, Postcode" class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-200" />
-      </div>
-
-      <div id="invoice-details-section" class="p-4 bg-white card border border-indigo-50">
-        <h3 class="text-sm font-semibold text-gray-700 mb-2">INVOICE DETAILS:</h3>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <input id="invoice-number" type="text" value="EW-" class="p-3 border border-gray-200 rounded-lg text-right focus:ring-2 focus:ring-indigo-200" />
-          <div class="p-3 border border-gray-100 rounded-lg bg-indigo-50 text-sm text-gray-700">DUE DATE: <input id="due-date" type="date" class="ml-2 text-sm" /></div>
-          <div class="col-span-2 text-xs text-gray-500 mt-1">Tip: use Add Lesson ▾ or Block Booking to generate lessons (all rows editable).</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- LESSONS (Block Booking inside Lessons box - Option A) -->
-    <section class="mt-6 p-0">
-      <div class="bg-white card border border-indigo-50 p-4">
-        <div class="flex items-center justify-between mb-3">
-          <h4 class="font-semibold text-gray-700">Lessons</h4>
-          <div class="flex gap-2 no-print">
-            <button id="add-lesson-btn" onclick="toggleLessonForm()" class="px-4 py-2 bg-indigo-700 text-white rounded-lg hover:bg-indigo-800">Add Lesson</button>
-            <button id="add-block-btn" onclick="toggleBlockForm()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Add Block Booking</button>
-          </div>
-        </div>
-
-        <!-- SINGLE LESSON FORM (no-print) -->
-        <div id="lesson-form" class="no-print hidden mb-4 p-3 border border-gray-100 rounded-lg bg-indigo-50">
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <select id="single-lesson-type" class="p-3 border rounded-lg"></select>
-            <input id="single-lesson-date" type="date" class="p-3 border rounded-lg" />
-            <input id="single-lesson-time" type="time" class="p-3 border rounded-lg" />
-          </div>
-          <div class="mt-3 flex gap-2">
-            <button onclick="addSingleFromForm()" class="btn px-4 py-2 bg-indigo-700 text-white rounded-lg hover:bg-indigo-800">Add</button>
-            <button onclick="closeLessonForm()" class="btn px-4 py-2 border rounded-lg">Cancel</button>
-          </div>
-        </div>
-
-        <!-- BLOCK BOOKING FORM (no-print; inside lessons per Option A) -->
-        <div id="block-form" class="no-print hidden mb-4 p-3 border border-gray-100 rounded-lg bg-indigo-50">
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-            <select id="block-lesson-type" class="p-3 border rounded-lg"></select>
-            <input id="block-start-date" type="date" class="p-3 border rounded-lg" />
-            <input id="block-time" type="time" class="p-3 border rounded-lg" />
-            <input id="block-weeks" type="number" min="1" value="4" class="p-3 border rounded-lg" placeholder="Number of weeks" />
-          </div>
-          <div class="mt-3 flex items-center justify-between">
-            <div class="text-sm text-gray-600">Generates one lesson per week (7 days apart). Each generated row remains editable.</div>
-            <div class="flex gap-2">
-              <button onclick="generateBlock()" class="btn px-4 py-2 bg-indigo-700 text-white rounded-lg hover:bg-indigo-800">Generate Block</button>
-              <button onclick="closeBlockForm()" class="btn px-4 py-2 border rounded-lg">Cancel</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- LESSON TABLE -->
-        <div class="table-wrap">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-indigo-700 text-white">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">Description</th>
-                <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">Date</th>
-                <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">Time</th>
-                <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider">Unit (£)</th>
-                <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider">Amount (£)</th>
-                <th class="px-2 py-3 no-print"></th>
-              </tr>
-            </thead>
-            <tbody id="item-list" class="bg-white divide-y divide-gray-100">
-              <!-- Rows injected by JS -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- NOTES + TOTALS: notes hide if empty on export -->
-    <section id="notes-and-totals" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div id="notes-section" class="p-4 bg-white card border border-indigo-50 no-export-if-empty">
-        <h3 class="font-semibold text-gray-700 mb-2">Notes</h3>
-        <textarea id="invoice-notes" rows="4" class="w-full p-3 border border-gray-200 rounded-lg" placeholder="e.g., Payment due upon receipt. Next lesson booked for..."></textarea>
-      </div>
-
-      <div class="p-4 bg-white card border border-indigo-50 flex flex-col justify-between">
+    <!-- Client + Invoice Info -->
+    <section class="py-6 border-b border-gray-100 grid grid-cols-2 gap-4 text-sm">
         <div>
-          <div class="flex justify-between text-sm text-gray-600 mb-2">
-            <span>Subtotal:</span>
-            <span id="subtotal" class="font-medium">£0.00</span>
-          </div>
-
-          <div class="flex justify-between items-center text-sm text-gray-700 border-t pt-3">
-            <div>
-              <div id="travel-fee-label" class="font-medium">Travel Fee:</div>
-              <div class="text-xs text-gray-500">Per session (multiplied by number of lessons)</div>
-            </div>
-            <div class="text-right">
-              <select id="travel-fee" onchange="calculateTotal()" class="p-2 border rounded-lg">
-                <option value="0">Within 5 miles – £0</option>
-                <option value="5">5 miles+ – £5</option>
-                <option value="10">10 miles+ – £10</option>
-                <option value="20">15 miles+ – £20</option>
-              </select>
-              <div id="travel-fee-total" class="text-sm mt-2 text-gray-700">£0.00</div>
-            </div>
-          </div>
+            <h3 class="font-semibold text-gray-700 mb-2">BILL TO:</h3>
+            <input id="client-name" type="text" placeholder="Client Name"
+                   class="w-full p-2 border border-gray-300 rounded-lg mb-1">
+            <input id="client-address" type="text" placeholder="Address, Postcode"
+                   class="w-full p-2 border border-gray-300 rounded-lg">
         </div>
 
-        <div class="mt-4 border-t pt-4">
-          <div class="flex justify-between items-center text-lg font-bold text-indigo-700">
-            <span>GRAND TOTAL:</span>
-            <span id="grand-total">£0.00</span>
-          </div>
+        <div class="text-right">
+            <h3 class="font-semibold text-gray-700 mb-2">INVOICE NO:</h3>
+            <input id="invoice-number" type="text"
+                   class="w-32 p-2 border border-gray-300 rounded-lg text-right">
 
-          <div class="mt-4 no-print">
-            <button onclick="prepareForPrint()" class="w-full btn px-4 py-3 bg-indigo-700 text-white rounded-lg hover:bg-indigo-800">Print / Save as PDF</button>
-          </div>
+            <p class="mt-3 text-gray-500">
+                DUE DATE:
+                <input id="due-date" type="date"
+                       class="border border-gray-300 rounded-lg p-1">
+            </p>
         </div>
-      </div>
     </section>
 
-    <!-- PAYMENT details (kept visible in export) -->
-    <section id="payment-section" class="mt-6">
-      <div class="p-4 bg-white card border border-indigo-50">
-        <h3 class="font-semibold text-gray-700 mb-2">Payment Details (Bank Transfer)</h3>
-        <p class="text-gray-800 font-medium">Account Name: Elliot Wardill</p>
-        <p class="text-gray-800 font-medium">Sort Code: 56-00-36</p>
-        <p class="text-gray-800 font-medium">Account No: 40013987</p>
-      </div>
+    <!-- Lessons Table -->
+    <section class="mt-8">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-indigo-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Qty</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Unit (£)</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount (£)</th>
+                </tr>
+            </thead>
+
+            <tbody id="item-list" class="bg-white divide-y divide-gray-200"></tbody>
+        </table>
+
+        <div class="no-print mt-4">
+            <button onclick="addItem()"
+                class="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2"
+                     viewBox="0 0 20 20" fill="currentColor">
+                     <path fill-rule="evenodd"
+                           d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+                           clip-rule="evenodd"/>
+                </svg>
+                Add Lesson
+            </button>
+        </div>
     </section>
 
-  </div>
+    <!-- Totals -->
+    <section class="mt-8 flex justify-end">
+        <div class="w-full md:w-1/2">
+            <div class="space-y-2">
+
+                <div class="flex justify-between text-sm font-medium text-gray-700">
+                    <span>Subtotal:</span>
+                    <span id="subtotal" class="font-semibold text-gray-900">£0.00</span>
+                </div>
+
+                <div class="flex justify-between items-center text-sm font-medium text-gray-700 py-2 border-t border-gray-100">
+                    <div>
+                        <label for="travel-fee" class="text-sm font-semibold">Travel Fee</label>
+                        <p class="text-xs text-indigo-500">Check policy for rates.</p>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <span>£</span>
+                        <input id="travel-fee" type="number" value="0.00"
+                               class="w-20 p-1 text-right border border-gray-300 rounded-lg"
+                               oninput="calculateTotal()">
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center text-lg font-bold text-gray-800 pt-4 border-t-4 border-indigo-500">
+                    <span>GRAND TOTAL DUE:</span>
+                    <span id="grand-total" class="text-indigo-700">£0.00</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Notes + Payment -->
+    <section class="mt-12 pt-6 border-t border-gray-200 grid md:grid-cols-2 gap-8 text-sm">
+
+        <div>
+            <h3 class="font-semibold text-gray-700 mb-2">NOTES:</h3>
+            <textarea id="invoice-notes" rows="3"
+                      class="w-full p-2 border border-gray-300 rounded-lg"
+                      placeholder="Payment due upon receipt."></textarea>
+        </div>
+
+        <div>
+            <h3 class="font-semibold text-gray-700 mb-2">PAYMENT DETAILS:</h3>
+            <p class="text-gray-900 font-medium">Account Name: Elliot Wardill</p>
+            <p class="text-gray-900 font-medium">Sort Code: 56-00-36</p>
+            <p class="text-gray-900 font-medium">Account No: 40013987</p>
+        </div>
+    </section>
 </div>
 
-<!-- ---------- Main JS (non-module) ---------- -->
+<!-- Print Button -->
+<div class="no-print text-center py-6">
+    <button onclick="window.print()"
+            class="px-8 py-3 bg-indigo-700 text-white font-bold rounded-lg hover:bg-indigo-800">
+        Print / Save as PDF
+    </button>
+</div>
+
 <script>
-/* ---------------- Configuration ---------------- */
+/* PRICE OPTIONS */
 const LESSON_OPTIONS = {
-  'Standard Lesson (30 Mins)': 15.00,
-  'Standard Lesson (60 Mins)': 30.00,
-  'Standard Lesson (120 Mins)': 50.00,
-  'Introductory Lesson': 10.00,
-  'Free Taster Session': 0.00,
-  'Custom Item': 0.00
+    "Standard Lesson (30 Mins)": 15.00,
+    "Standard Lesson (60 Mins)": 30.00,
+    "Standard Lesson (120 Mins)": 50.00,
+    "Introductory Lesson": 10.00,
+    "Free Taster Session": 0.00,
+    "Cancellation Fee (24 Hour Policy)": 0.00,
+    "Custom Item": 0.00
 };
 
-/* ---------- Helpers: date/time/formatting ---------- */
-function formatDateShort(d) {
-  const dd = String(d.getDate()).padStart(2,'0');
-  const mm = String(d.getMonth()+1).padStart(2,'0');
-  const yy = d.getFullYear();
-  return dd + '/' + mm + '/' + yy;
-}
-function weekdayShort(d) {
-  return d.toLocaleDateString('en-GB', { weekday: 'short' });
-}
-function formatTimeTo12H(timeStr) {
-  if (!timeStr) return '';
-  const [h,m] = timeStr.split(':').map(Number);
-  const dt = new Date(); dt.setHours(h,m);
-  return dt.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' });
-}
-function sanitizeFilenameAllowSlashes(str) {
-  return str.replace(/[^a-z0-9 \\-_,.()\\/]/gi, '').trim();
-}
+/* Create Lesson Selector */
+function createLessonSelect(defaultOption) {
+    let html = `<select onchange="updatePrice(this)"
+                class="lesson-select w-full p-1 border border-gray-300 rounded-lg text-sm">
+                    <option disabled selected>Select Lesson Type / Item</option>`;
 
-/* ---------- UI toggles ---------- */
-function toggleLessonForm() {
-  const el = document.getElementById('lesson-form');
-  el.classList.toggle('hidden');
-}
-function closeLessonForm() { document.getElementById('lesson-form').classList.add('hidden'); }
-function toggleBlockForm() {
-  const el = document.getElementById('block-form');
-  el.classList.toggle('hidden');
-}
-function closeBlockForm() { document.getElementById('block-form').classList.add('hidden'); }
-
-/* ---------- Row creation & editing ---------- */
-function createRow({ lessonName, dateISO, timeStr, unitPrice }) {
-  const tbody = document.getElementById('item-list');
-  const tr = document.createElement('tr');
-  tr.className = 'item-row';
-
-  // Description cell
-  const tdDesc = document.createElement('td');
-  tdDesc.className = 'px-6 py-3';
-  const descDiv = document.createElement('div');
-  descDiv.className = 'desc-text text-gray-800 font-medium';
-  updateRowDescText(descDiv, lessonName, dateISO, timeStr);
-  tdDesc.appendChild(descDiv);
-
-  // Date cell
-  const tdDate = document.createElement('td');
-  tdDate.className = 'px-6 py-3';
-  const dateInput = document.createElement('input');
-  dateInput.type = 'date';
-  dateInput.value = dateISO || '';
-  dateInput.className = 'p-2 border rounded-lg';
-  tdDate.appendChild(dateInput);
-
-  // Time cell
-  const tdTime = document.createElement('td');
-  tdTime.className = 'px-6 py-3';
-  const timeInput = document.createElement('input');
-  timeInput.type = 'time';
-  timeInput.value = timeStr || '';
-  timeInput.className = 'p-2 border rounded-lg';
-  tdTime.appendChild(timeInput);
-
-  // Unit price cell
-  const tdUnit = document.createElement('td');
-  tdUnit.className = 'px-6 py-3 text-right';
-  const unitInput = document.createElement('input');
-  unitInput.type = 'number'; unitInput.min = '0'; unitInput.step = '0.01';
-  unitInput.value = (unitPrice || 0).toFixed(2);
-  unitInput.className = 'p-2 border-b border-gray-200 text-right';
-  tdUnit.appendChild(unitInput);
-
-  // Amount cell
-  const tdAmount = document.createElement('td');
-  tdAmount.className = 'px-6 py-3 text-right font-medium';
-  const amt = (parseFloat(unitInput.value) || 0).toFixed(2);
-  tdAmount.textContent = amt;
-
-  // Remove cell (no-print)
-  const tdRm = document.createElement('td');
-  tdRm.className = 'px-2 py-3 no-print';
-  const rmBtn = document.createElement('button');
-  rmBtn.className = 'text-red-500 hover:text-red-700';
-  rmBtn.innerHTML = '✕';
-  rmBtn.onclick = () => { tr.remove(); calculateTotal(); };
-  tdRm.appendChild(rmBtn);
-
-  // Append row
-  tr.append(tdDesc, tdDate, tdTime, tdUnit, tdAmount, tdRm);
-  tbody.appendChild(tr);
-
-  // Event listeners to keep description & totals updated
-  dateInput.addEventListener('input', () => { updateRowDescText(descDiv, lessonName, dateInput.value, timeInput.value); calculateTotal(); });
-  timeInput.addEventListener('input', () => { updateRowDescText(descDiv, lessonName, dateInput.value, timeInput.value); calculateTotal(); });
-  unitInput.addEventListener('input', () => { tdAmount.textContent = (parseFloat(unitInput.value || 0)).toFixed(2); calculateTotal(); });
-
-  calculateTotal();
-  return tr;
-}
-
-function updateRowDescText(descEl, lessonName, dateISO, timeStr) {
-  const parts = [lessonName];
-  if (dateISO) {
-    try {
-      const d = new Date(dateISO + 'T00:00:00');
-      const wk = weekdayShort(d);
-      const ds = formatDateShort(d);
-      if (timeStr) {
-        const t12 = formatTimeTo12H(timeStr);
-        parts.push(`${wk} ${t12} – ${ds}`);
-      } else {
-        parts.push(`${wk} – ${ds}`);
-      }
-    } catch (e) {
-      parts.push(dateISO);
+    for (const [name, price] of Object.entries(LESSON_OPTIONS)) {
+        html += `<option value="${name}" data-price="${price}" ${name === defaultOption ? "selected" : ""}>
+                    ${name}
+                 </option>`;
     }
-  } else if (timeStr) {
-    parts.push(formatTimeTo12H(timeStr));
-  }
-  descEl.textContent = parts.join(' – ');
+
+    html += `</select>`;
+    return html;
 }
 
-/* ---------- Single lesson flow ---------- */
-function addSingleFromForm() {
-  const type = document.getElementById('single-lesson-type').value;
-  const date = document.getElementById('single-lesson-date').value;
-  const time = document.getElementById('single-lesson-time').value;
-  if (!type) { alert('Select a lesson type'); return; }
-  const price = LESSON_OPTIONS[type] ?? 0;
-  createRow({ lessonName: type, dateISO: date, timeStr: time, unitPrice: price });
-  closeLessonForm();
+/* Add Line Item Row */
+function addItem(defaultOption = "Standard Lesson (60 Mins)") {
+    const list = document.getElementById("item-list");
+
+    const row = document.createElement("tr");
+    row.className = "item-row";
+
+    const price = LESSON_OPTIONS[defaultOption];
+
+    row.innerHTML = `
+        <td class="px-6 py-4 text-sm text-gray-900">
+            ${createLessonSelect(defaultOption)}
+        </td>
+
+        <td class="px-6 py-4 text-right text-sm">
+            <input type="number" value="1" min="1"
+                class="item-qty w-16 p-1 text-right border-b border-gray-300"
+                oninput="calculateTotal()">
+        </td>
+
+        <td class="px-6 py-4 text-right text-sm">
+            <input type="number" value="${price.toFixed(2)}" min="0" step="0.01"
+                class="item-price w-20 p-1 text-right border-b border-gray-300"
+                oninput="calculateTotal()">
+        </td>
+
+        <td class="px-6 py-4 text-right text-sm font-medium total-amount">0.00</td>
+
+        <td class="px-2 py-4 no-print">
+            <button onclick="removeItem(this)"
+                    class="text-red-500 hover:text-red-700">
+                    ✕
+            </button>
+        </td>
+    `;
+
+    list.appendChild(row);
+    calculateTotal();
 }
 
-/* ---------- Block booking flow ---------- */
-function generateBlock() {
-  const type = document.getElementById('block-lesson-type').value;
-  const start = document.getElementById('block-start-date').value;
-  const time = document.getElementById('block-time').value;
-  const weeks = parseInt(document.getElementById('block-weeks').value, 10) || 0;
-  if (!type) { alert('Choose a lesson type'); return; }
-  if (!start) { alert('Choose start date'); return; }
-  if (!weeks || weeks < 1) { alert('Enter number of weeks (>=1)'); return; }
-  const startDate = new Date(start + 'T00:00:00');
-  const price = LESSON_OPTIONS[type] ?? 0;
-  for (let i = 0; i < weeks; i++) {
-    const d = new Date(startDate);
-    d.setDate(startDate.getDate() + (i * 7));
-    const iso = d.toISOString().split('T')[0];
-    createRow({ lessonName: type, dateISO: iso, timeStr: time, unitPrice: price });
-  }
-  closeBlockForm();
+/* Remove Item */
+function removeItem(btn) {
+    btn.closest(".item-row").remove();
+    calculateTotal();
 }
 
-/* ---------- Totals and travel-per-session ---------- */
+/* Update Price When Lesson Type Changes */
+function updatePrice(select) {
+    const price = select.selectedOptions[0].dataset.price;
+    const row = select.closest(".item-row");
+    row.querySelector(".item-price").value = Number(price).toFixed(2);
+    calculateTotal();
+}
+
+/* Calculate Totals */
 function calculateTotal() {
-  const rows = document.querySelectorAll('#item-list tr');
-  let subtotal = 0;
-  rows.forEach(tr => {
-    const unit = parseFloat(tr.querySelector('input[type="number"]').value) || 0;
-    tr.querySelector('td:nth-child(5)').textContent = unit.toFixed(2);
-    subtotal += unit;
-  });
-  const perTravel = parseFloat(document.getElementById('travel-fee').value) || 0;
-  const travelTotal = perTravel * rows.length;
-  document.getElementById('subtotal').textContent = '£' + subtotal.toFixed(2);
-  document.getElementById('travel-fee-total') && (document.getElementById('travel-fee-total').textContent = '£' + travelTotal.toFixed(2));
-  document.getElementById('grand-total').textContent = '£' + (subtotal + travelTotal).toFixed(2);
-  document.getElementById('travel-fee-label').textContent = `Travel Fee (x${rows.length} sessions):`;
-}
+    let subtotal = 0;
 
-/* ---------- Filename helper (earliest lesson date) ---------- */
-function getEarliestDateForFilename() {
-  const dateInputs = Array.from(document.querySelectorAll('#item-list input[type="date"]')).map(i => i.value).filter(Boolean);
-  if (!dateInputs.length) return null;
-  const times = dateInputs.map(s => new Date(s + 'T00:00:00').getTime());
-  const min = Math.min(...times);
-  return formatDateShort(new Date(min)); // dd/mm/yyyy
-}
+    document.querySelectorAll(".item-row").forEach(row => {
+        const qty = parseFloat(row.querySelector(".item-qty").value) || 0;
+        const price = parseFloat(row.querySelector(".item-price").value) || 0;
 
-/* ---------- Prepare for print: hide UI & empty sections ---------- */
-function prepareForPrint() {
-  // update descriptions
-  document.querySelectorAll('#item-list tr').forEach(tr => {
-    const descEl = tr.querySelector('.desc-text');
-    const lessonName = descEl ? descEl.textContent.split(' – ')[0] : '';
-    const date = tr.querySelector('input[type="date"]').value;
-    const time = tr.querySelector('input[type="time"]').value;
-    if (descEl) updateRowDescText(descEl, lessonName, date, time);
-  });
+        const total = qty * price;
+        row.querySelector(".total-amount").textContent = total.toFixed(2);
 
-  // hide UI-only sections
-  document.getElementById('client-manager-section').classList.add('hide-for-export');
-
-  // hide notes section if empty
-  const notesEl = document.getElementById('invoice-notes');
-  if (notesEl && notesEl.value.trim() === '') {
-    document.getElementById('notes-section').classList.add('hide-for-export');
-  } else {
-    document.getElementById('notes-section').classList.remove('hide-for-export');
-  }
-
-  // hide interactive controls (safety)
-  document.querySelectorAll('.no-print').forEach(n => n.classList.add('hide-for-export'));
-
-  // set document title (filename)
-  const invNo = document.getElementById('invoice-number').value || 'Invoice';
-  const client = document.getElementById('client-name').value || 'Client';
-  const earliest = getEarliestDateForFilename();
-  const fileDate = earliest ? earliest : formatDateShort(new Date());
-  document.title = sanitizeFilenameAllowSlashes(`${client} - ${fileDate} - ${invNo}`);
-
-  // call print
-  window.print();
-
-  // restore UI after short delay
-  setTimeout(() => {
-    document.querySelectorAll('.hide-for-export').forEach(el => el.classList.remove('hide-for-export'));
-    document.title = 'Elliot Wardill Invoice Generator';
-  }, 1000);
-}
-
-/* ---------- Init: populate selects and default row ---------- */
-function populateLessonSelects() {
-  const single = document.getElementById('single-lesson-type');
-  const block = document.getElementById('block-lesson-type');
-  [single, block].forEach(s => { if (s) s.innerHTML = '<option value="" disabled selected>Select Lesson Type</option>'; });
-  Object.keys(LESSON_OPTIONS).forEach(name => {
-    [single, block].forEach(s => {
-      if (!s) return;
-      const opt = document.createElement('option'); opt.value = name; opt.textContent = name;
-      s.appendChild(opt);
+        subtotal += total;
     });
-  });
+
+    const travelFee = parseFloat(document.getElementById("travel-fee").value) || 0;
+    const grandTotal = subtotal + travelFee;
+
+    document.getElementById("subtotal").textContent = `£${subtotal.toFixed(2)}`;
+    document.getElementById("grand-total").textContent = `£${grandTotal.toFixed(2)}`;
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-  const todayISO = new Date().toISOString().split('T')[0];
-  document.getElementById('invoice-date').textContent = new Date().toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
-  document.getElementById('due-date') && (document.getElementById('due-date').value = todayISO);
-  document.getElementById('invoice-number').value = 'EW-' + Math.floor(Math.random() * 90000 + 10000);
-  populateLessonSelects();
-  // add a sample default row to make layout obvious
-  createRow({ lessonName: 'Standard Lesson (60 Mins)', dateISO: todayISO, timeStr: '17:00', unitPrice: LESSON_OPTIONS['Standard Lesson (60 Mins)'] });
-  // hide forms when clicking outside menus
-  document.addEventListener('click', e => {
-    const form = document.getElementById('lesson-form');
-    const block = document.getElementById('block-form');
-    if (form && !form.contains(e.target) && !document.getElementById('add-lesson-btn')?.contains(e.target)) form.classList.add('hidden');
-    if (block && !block.contains(e.target) && !document.getElementById('add-block-btn')?.contains(e.target)) block.classList.add('hidden');
-  });
-  // recalc totals when editing any field inline
-  document.getElementById('item-list').addEventListener('input', calculateTotal);
-});
+/* On Load */
+window.onload = () => {
+    const today = new Date().toISOString().split("T")[0];
+    document.getElementById("due-date").value = today;
 
-/* ---------- Expose functions so inline onclicks work ---------- */
-window.toggleLessonForm = toggleLessonForm;
-window.openLessonForm = toggleLessonForm;
-window.closeLessonForm = closeLessonForm;
-window.toggleBlockForm = toggleBlockForm;
-window.closeBlockForm = closeBlockForm;
-window.addSingleFromForm = addSingleFromForm;
-window.generateBlock = generateBlock;
-window.createRow = createRow;
-window.calculateTotal = calculateTotal;
-window.prepareForPrint = prepareForPrint;
+    document.getElementById("invoice-date").textContent =
+        new Date().toLocaleDateString("en-GB", { year: "numeric", month: "long", day: "numeric" });
 
-</script>
+    document.getElementById("invoice-number").value =
+        "EW-" + Math.floor(10000 + Math.random() * 90000);
 
-<!-- ---------- Firebase Client Manager (module) ---------- -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-analytics.js";
-  import { getFirestore, collection, addDoc, getDocs, getDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
-
-  // Correct storageBucket and your config
-  const firebaseConfig = {
-    apiKey: "AIzaSyDZy7Y40rq-itG6AeZcihtIqVjzvfQqNtY",
-    authDomain: "elliotinvoicemanager.firebaseapp.com",
-    projectId: "elliotinvoicemanager",
-    storageBucket: "elliotinvoicemanager.appspot.com",
-    messagingSenderId: "722602611594",
-    appId: "1:722602611594:web:06c8159a236777d1f8ae73",
-    measurementId: "G-R81851NH79"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  try { getAnalytics(app); } catch(e) { /* ignore analytics issues */ }
-  const db = getFirestore(app);
-
-  function showClientMessage(type, text) {
-    const el = document.getElementById('client-msg');
-    if (!el) return;
-    el.innerHTML = `<div class="msg ${type === 'success' ? 'success' : 'error'}">${text}</div>`;
-    setTimeout(() => { if (el) el.innerHTML = ''; }, 4000);
-  }
-
-  window.openClientSavePrompt = () => {
-    document.getElementById('save-client-confirm').classList.remove('hidden');
-    document.getElementById('open-save-btn').classList.add('opacity-60');
-  };
-  window.cancelSaveClient = () => {
-    document.getElementById('save-client-confirm').classList.add('hidden');
-    document.getElementById('open-save-btn').classList.remove('opacity-60');
-  };
-
-  window.confirmSaveClient = async () => {
-    const name = document.getElementById('client-name').value.trim();
-    const address = document.getElementById('client-address').value.trim();
-    if (!name) return showClientMessage('error', 'Enter client name before saving.');
-    try {
-      await addDoc(collection(db, "clients"), { name, address, createdAt: new Date().toISOString() });
-      showClientMessage('success', `Saved "${name}"`);
-      cancelSaveClient();
-      await loadClients();
-      // auto-select the newly saved client (by name)
-      const dd = document.getElementById('saved-clients');
-      for (const opt of Array.from(dd.options)) { if (opt.textContent === name) { dd.value = opt.value; break; } }
-    } catch(err) {
-      console.error('Error saving client:', err);
-      showClientMessage('error', 'Error saving client (see console).');
-    }
-  };
-
-  window.loadClients = async () => {
-    const dd = document.getElementById('saved-clients');
-    if (!dd) return;
-    dd.innerHTML = '<option value="">Select Existing Client</option>';
-    try {
-      const snapshot = await getDocs(collection(db, "clients"));
-      snapshot.forEach(docSnap => {
-        const data = docSnap.data();
-        const opt = document.createElement('option');
-        opt.value = docSnap.id;
-        opt.textContent = data.name;
-        dd.appendChild(opt);
-      });
-    } catch(err) {
-      console.error('Error loading clients:', err);
-      showClientMessage('error', 'Error loading clients (console).');
-    }
-  };
-
-  window.loadClient = async () => {
-    const id = document.getElementById('saved-clients').value;
-    if (!id) return;
-    try {
-      const snap = await getDoc(doc(db, 'clients', id));
-      if (snap.exists()) {
-        const data = snap.data();
-        document.getElementById('client-name').value = data.name || '';
-        document.getElementById('client-address').value = data.address || '';
-        showClientMessage('success', `Loaded "${data.name}"`);
-      } else {
-        showClientMessage('error', 'Client not found.');
-      }
-    } catch(err) {
-      console.error('Error loading client:', err);
-      showClientMessage('error', 'Error loading client (console).');
-    }
-  };
-
-  window.deleteClient = async () => {
-    const id = document.getElementById('saved-clients').value;
-    if (!id) return showClientMessage('error', 'Select a client first');
-    if (!confirm('Delete this client permanently?')) return;
-    try {
-      await deleteDoc(doc(db, 'clients', id));
-      showClientMessage('success', 'Client deleted');
-      await loadClients();
-      document.getElementById('client-name').value = '';
-      document.getElementById('client-address').value = '';
-    } catch(err) {
-      console.error('Error deleting client:', err);
-      showClientMessage('error', 'Error deleting client (console).');
-    }
-  };
-
-  // expose for onclicks
-  window.confirmSaveClient = window.confirmSaveClient;
-  window.cancelSaveClient = window.cancelSaveClient;
-  window.loadClients = window.loadClients;
-  window.loadClient = window.loadClient;
-  window.deleteClient = window.deleteClient;
-
-  window.addEventListener('DOMContentLoaded', loadClients);
+    addItem();
+};
 </script>
 
 </body>

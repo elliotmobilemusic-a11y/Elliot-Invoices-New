@@ -2,44 +2,41 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Elliot Wardill Invoice Generator</title>
-  <link rel="icon" type="image/png" href="i-favicon.png">
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
-    /* ---------- Print styling (Chrome -> Save as PDF tuned) ---------- */
+    /* ===== Print-first safe layout ===== */
     @media print {
       body { background: white; font-size: 10pt; margin: 0.5cm; }
       .no-print { display: none !important; }
       .invoice-container { box-shadow: none !important; border: none !important; margin: 0; padding: 0; }
       .text-gray-700, .text-gray-900 { color: #000 !important; }
-      thead { display: table-header-group; } /* ensure header repeats */
+      thead { display: table-header-group; }
       table { width: 100%; border-collapse: collapse; table-layout: fixed; }
       input, textarea, select, button { border: none !important; box-shadow: none !important; }
       tr { page-break-inside: avoid; }
-      .hide-for-export { display: none !important; } /* explicit hide class during export */
+      .hide-for-export { display: none !important; }
     }
 
-    /* ---------- Page visuals ---------- */
+    /* ===== Page visuals ===== */
     body { font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background-color: #eef2ff; }
     .invoice-wrapper { max-width: 1100px; margin: 2.5rem auto; padding: 1rem; }
     .invoice-container { background: white; border-radius: 1rem; padding: 1.25rem; box-shadow: 0 8px 24px rgba(15,23,42,0.06); border: 1px solid rgba(79,70,229,0.06); }
     .card { border-radius: 0.75rem; }
     .btn { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
 
-    /* ---------- Table fixed layout rules (no qty) ---------- */
+    /* ===== Table fixed layout rules (no qty) - improved widths to avoid overlap ===== */
     table { table-layout: fixed; width: 100%; }
-    /* Columns: Description | Date | Time | Unit | Amount */
-    th:nth-child(1), td:nth-child(1) { width: 55%; white-space: normal; word-wrap: break-word; overflow-wrap: anywhere; }
-    th:nth-child(2), td:nth-child(2) { width: 13%; min-width: 100px; }
-    th:nth-child(3), td:nth-child(3) { width: 12%; min-width: 95px; }
-    th:nth-child(4), td:nth-child(4) { width: 10%; min-width: 80px; }
-    th:nth-child(5), td:nth-child(5) { width: 10%; min-width: 90px; }
+    th:nth-child(1), td:nth-child(1) { width: 48%; white-space: normal; word-wrap: break-word; overflow-wrap: anywhere; } /* Description */
+    th:nth-child(2), td:nth-child(2) { width: 14%; min-width: 100px; } /* Date */
+    th:nth-child(3), td:nth-child(3) { width: 16%; min-width: 110px; } /* Time */
+    th:nth-child(4), td:nth-child(4) { width: 11%; min-width: 85px; } /* Unit */
+    th:nth-child(5), td:nth-child(5) { width: 11%; min-width: 90px; } /* Amount */
 
     .desc-text { line-height: 1.25; display: block; }
 
-    /* small client message */
     .msg { padding: 0.5rem 0.75rem; border-radius: 8px; font-size: 0.95rem; }
     .msg.success { background: #ecfccb; color: #166534; border: 1px solid #bbf7d0; }
     .msg.error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
@@ -55,20 +52,16 @@
 <body>
 
 <div class="invoice-wrapper">
-  <div class="invoice-container card">
+  <div class="invoice-container">
 
-    <!-- HEADER (visible in export) -->
+    <!-- HEADER -->
     <header class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start pb-4 border-b border-indigo-100">
       <div>
-        <h1 class="text-4xl md:text-5xl font-extrabold text-indigo-700 tracking-tight">INVOICE</h1>
-        <div class="mt-3 flex items-center text-sm text-indigo-600">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V8H3v11a2 2 0 002 2z"/>
-          </svg>
+        <h1 class="text-4xl md:text-5xl font-extrabold text-indigo-700">INVOICE</h1>
+        <div class="mt-3 text-sm text-indigo-600">
           <span id="invoice-date" class="font-medium"></span>
         </div>
       </div>
-
       <div class="text-left md:text-right">
         <div class="font-semibold text-lg text-gray-800">Elliot Wardill Mobile Music Lessons</div>
         <div class="text-sm text-gray-600 mt-1">Pudsey, UK</div>
@@ -77,9 +70,9 @@
       </div>
     </header>
 
-    <!-- CLIENT MANAGER (UI only: hidden in export) -->
+    <!-- CLIENT MANAGER (UI only; hidden in export) -->
     <section id="client-manager-section" class="mt-6 no-print">
-      <div class="p-4 rounded-lg bg-indigo-50 border border-indigo-100 card">
+      <div class="p-4 rounded-lg bg-indigo-50 border border-indigo-100">
         <h3 class="text-sm font-semibold text-indigo-800 mb-3">Client Manager</h3>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <select id="saved-clients" onchange="loadClient()" class="p-3 border border-indigo-100 rounded-lg sm:col-span-2">
@@ -103,27 +96,27 @@
       </div>
     </section>
 
-    <!-- BILL TO & INVOICE DETAILS (visible in export) -->
+    <!-- BILL TO & INVOICE DETAILS -->
     <section class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div id="billto-section" class="p-4 bg-white card border border-indigo-50">
+      <div id="billto-section" class="p-4 bg-white border border-indigo-50 rounded-lg">
         <h3 class="text-sm font-semibold text-gray-700 mb-2">BILL TO:</h3>
-        <input id="client-name" type="text" placeholder="Client Full Name" class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-200 mb-3" />
-        <input id="client-address" type="text" placeholder="Address, Postcode" class="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-200" />
+        <input id="client-name" type="text" placeholder="Client Full Name" class="w-full p-3 border border-gray-200 rounded-lg mb-3" />
+        <input id="client-address" type="text" placeholder="Address, Postcode" class="w-full p-3 border border-gray-200 rounded-lg" />
       </div>
 
-      <div id="invoice-details-section" class="p-4 bg-white card border border-indigo-50">
+      <div id="invoice-details-section" class="p-4 bg-white border border-indigo-50 rounded-lg">
         <h3 class="text-sm font-semibold text-gray-700 mb-2">INVOICE DETAILS:</h3>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <input id="invoice-number" type="text" value="EW-" class="p-3 border border-gray-200 rounded-lg text-right focus:ring-2 focus:ring-indigo-200" />
+          <input id="invoice-number" type="text" value="EW-" class="p-3 border border-gray-200 rounded-lg text-right" />
           <div class="p-3 border border-gray-100 rounded-lg bg-indigo-50 text-sm text-gray-700">DUE DATE: <input id="due-date" type="date" class="ml-2 text-sm" /></div>
-          <div class="col-span-2 text-xs text-gray-500 mt-1">Tip: use Add Lesson ▾ or Block Booking to generate lessons (all rows editable).</div>
+          <div class="col-span-2 text-xs text-gray-500 mt-1">Tip: use Add Lesson or Add Block Booking to generate lessons (all rows editable).</div>
         </div>
       </div>
     </section>
 
     <!-- LESSONS (Block Booking inside Lessons box - Option A) -->
-    <section class="mt-6 p-0">
-      <div class="bg-white card border border-indigo-50 p-4">
+    <section class="mt-6">
+      <div class="bg-white rounded-lg border border-indigo-50 p-4">
         <div class="flex items-center justify-between mb-3">
           <h4 class="font-semibold text-gray-700">Lessons</h4>
           <div class="flex gap-2 no-print">
@@ -145,7 +138,7 @@
           </div>
         </div>
 
-        <!-- BLOCK BOOKING FORM (no-print; inside lessons per Option A) -->
+        <!-- BLOCK BOOKING FORM (no-print) -->
         <div id="block-form" class="no-print hidden mb-4 p-3 border border-gray-100 rounded-lg bg-indigo-50">
           <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
             <select id="block-lesson-type" class="p-3 border rounded-lg"></select>
@@ -167,30 +160,28 @@
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-indigo-700 text-white">
               <tr>
-                <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">Description</th>
-                <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">Date</th>
-                <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">Time</th>
-                <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider">Unit (£)</th>
-                <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider">Amount (£)</th>
+                <th class="px-6 py-3 text-left text-xs font-semibold uppercase">Description</th>
+                <th class="px-6 py-3 text-left text-xs font-semibold uppercase">Date</th>
+                <th class="px-6 py-3 text-left text-xs font-semibold uppercase">Time</th>
+                <th class="px-6 py-3 text-right text-xs font-semibold uppercase">Unit (£)</th>
+                <th class="px-6 py-3 text-right text-xs font-semibold uppercase">Amount (£)</th>
                 <th class="px-2 py-3 no-print"></th>
               </tr>
             </thead>
-            <tbody id="item-list" class="bg-white divide-y divide-gray-100">
-              <!-- Rows injected by JS -->
-            </tbody>
+            <tbody id="item-list" class="bg-white divide-y divide-gray-100"></tbody>
           </table>
         </div>
       </div>
     </section>
 
-    <!-- NOTES + TOTALS: notes hide if empty on export -->
+    <!-- NOTES + TOTALS -->
     <section id="notes-and-totals" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div id="notes-section" class="p-4 bg-white card border border-indigo-50 no-export-if-empty">
+      <div id="notes-section" class="p-4 bg-white rounded-lg border border-indigo-50 no-export-if-empty">
         <h3 class="font-semibold text-gray-700 mb-2">Notes</h3>
-        <textarea id="invoice-notes" rows="4" class="w-full p-3 border border-gray-200 rounded-lg" placeholder="e.g., Payment due upon receipt. Next lesson booked for..."></textarea>
+        <textarea id="invoice-notes" rows="4" class="w-full p-3 border border-gray-200 rounded-lg" placeholder="Payment terms, additional info..."></textarea>
       </div>
 
-      <div class="p-4 bg-white card border border-indigo-50 flex flex-col justify-between">
+      <div class="p-4 bg-white rounded-lg border border-indigo-50 flex flex-col justify-between">
         <div>
           <div class="flex justify-between text-sm text-gray-600 mb-2">
             <span>Subtotal:</span>
@@ -229,7 +220,7 @@
 
     <!-- PAYMENT details (kept visible in export) -->
     <section id="payment-section" class="mt-6">
-      <div class="p-4 bg-white card border border-indigo-50">
+      <div class="p-4 bg-white rounded-lg border border-indigo-50">
         <h3 class="font-semibold text-gray-700 mb-2">Payment Details (Bank Transfer)</h3>
         <p class="text-gray-800 font-medium">Account Name: Elliot Wardill</p>
         <p class="text-gray-800 font-medium">Sort Code: 56-00-36</p>
@@ -240,9 +231,9 @@
   </div>
 </div>
 
-<!-- ---------- Main JS (non-module) ---------- -->
+<!-- Main app JS -->
 <script>
-/* ---------------- Configuration ---------------- */
+/* ================= Configuration ================= */
 const LESSON_OPTIONS = {
   'Standard Lesson (30 Mins)': 15.00,
   'Standard Lesson (60 Mins)': 30.00,
@@ -252,7 +243,7 @@ const LESSON_OPTIONS = {
   'Custom Item': 0.00
 };
 
-/* ---------- Helpers: date/time/formatting ---------- */
+/* ================= Helpers ================= */
 function formatDateShort(d) {
   const dd = String(d.getDate()).padStart(2,'0');
   const mm = String(d.getMonth()+1).padStart(2,'0');
@@ -268,29 +259,24 @@ function formatTimeTo12H(timeStr) {
   const dt = new Date(); dt.setHours(h,m);
   return dt.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' });
 }
-function sanitizeFilenameAllowSlashes(str) {
-  return str.replace(/[^a-z0-9 \\-_,.()\\/]/gi, '').trim();
+function sanitizeFilename(str) {
+  // keep slashes replaced by dashes for filesystem safety in browsers
+  return str.replace(/[^a-z0-9 \\-_,.()\/]/gi, '').trim();
 }
 
-/* ---------- UI toggles ---------- */
-function toggleLessonForm() {
-  const el = document.getElementById('lesson-form');
-  el.classList.toggle('hidden');
-}
+/* ================= UI toggles ================= */
+function toggleLessonForm() { document.getElementById('lesson-form').classList.toggle('hidden'); }
 function closeLessonForm() { document.getElementById('lesson-form').classList.add('hidden'); }
-function toggleBlockForm() {
-  const el = document.getElementById('block-form');
-  el.classList.toggle('hidden');
-}
+function toggleBlockForm() { document.getElementById('block-form').classList.toggle('hidden'); }
 function closeBlockForm() { document.getElementById('block-form').classList.add('hidden'); }
 
-/* ---------- Row creation & editing ---------- */
+/* ================= Row creation ================= */
 function createRow({ lessonName, dateISO, timeStr, unitPrice }) {
   const tbody = document.getElementById('item-list');
   const tr = document.createElement('tr');
   tr.className = 'item-row';
 
-  // Description cell
+  // Description
   const tdDesc = document.createElement('td');
   tdDesc.className = 'px-6 py-3';
   const descDiv = document.createElement('div');
@@ -298,7 +284,7 @@ function createRow({ lessonName, dateISO, timeStr, unitPrice }) {
   updateRowDescText(descDiv, lessonName, dateISO, timeStr);
   tdDesc.appendChild(descDiv);
 
-  // Date cell
+  // Date
   const tdDate = document.createElement('td');
   tdDate.className = 'px-6 py-3';
   const dateInput = document.createElement('input');
@@ -307,7 +293,7 @@ function createRow({ lessonName, dateISO, timeStr, unitPrice }) {
   dateInput.className = 'p-2 border rounded-lg';
   tdDate.appendChild(dateInput);
 
-  // Time cell
+  // Time
   const tdTime = document.createElement('td');
   tdTime.className = 'px-6 py-3';
   const timeInput = document.createElement('input');
@@ -316,7 +302,7 @@ function createRow({ lessonName, dateISO, timeStr, unitPrice }) {
   timeInput.className = 'p-2 border rounded-lg';
   tdTime.appendChild(timeInput);
 
-  // Unit price cell
+  // Unit price
   const tdUnit = document.createElement('td');
   tdUnit.className = 'px-6 py-3 text-right';
   const unitInput = document.createElement('input');
@@ -325,13 +311,12 @@ function createRow({ lessonName, dateISO, timeStr, unitPrice }) {
   unitInput.className = 'p-2 border-b border-gray-200 text-right';
   tdUnit.appendChild(unitInput);
 
-  // Amount cell
+  // Amount
   const tdAmount = document.createElement('td');
   tdAmount.className = 'px-6 py-3 text-right font-medium';
-  const amt = (parseFloat(unitInput.value) || 0).toFixed(2);
-  tdAmount.textContent = amt;
+  tdAmount.textContent = (parseFloat(unitInput.value) || 0).toFixed(2);
 
-  // Remove cell (no-print)
+  // Remove (no-print)
   const tdRm = document.createElement('td');
   tdRm.className = 'px-2 py-3 no-print';
   const rmBtn = document.createElement('button');
@@ -340,14 +325,13 @@ function createRow({ lessonName, dateISO, timeStr, unitPrice }) {
   rmBtn.onclick = () => { tr.remove(); calculateTotal(); };
   tdRm.appendChild(rmBtn);
 
-  // Append row
   tr.append(tdDesc, tdDate, tdTime, tdUnit, tdAmount, tdRm);
   tbody.appendChild(tr);
 
-  // Event listeners to keep description & totals updated
+  // events
   dateInput.addEventListener('input', () => { updateRowDescText(descDiv, lessonName, dateInput.value, timeInput.value); calculateTotal(); });
   timeInput.addEventListener('input', () => { updateRowDescText(descDiv, lessonName, dateInput.value, timeInput.value); calculateTotal(); });
-  unitInput.addEventListener('input', () => { tdAmount.textContent = (parseFloat(unitInput.value || 0)).toFixed(2); calculateTotal(); });
+  unitInput.addEventListener('input', () => { tdAmount.textContent = (parseFloat(unitInput.value) || 0).toFixed(2); calculateTotal(); });
 
   calculateTotal();
   return tr;
@@ -375,7 +359,7 @@ function updateRowDescText(descEl, lessonName, dateISO, timeStr) {
   descEl.textContent = parts.join(' – ');
 }
 
-/* ---------- Single lesson flow ---------- */
+/* ================= Single lesson flow ================= */
 function addSingleFromForm() {
   const type = document.getElementById('single-lesson-type').value;
   const date = document.getElementById('single-lesson-date').value;
@@ -386,7 +370,7 @@ function addSingleFromForm() {
   closeLessonForm();
 }
 
-/* ---------- Block booking flow ---------- */
+/* ================= Block booking flow ================= */
 function generateBlock() {
   const type = document.getElementById('block-lesson-type').value;
   const start = document.getElementById('block-start-date').value;
@@ -406,7 +390,7 @@ function generateBlock() {
   closeBlockForm();
 }
 
-/* ---------- Totals and travel-per-session ---------- */
+/* ================= Totals & travel ================= */
 function calculateTotal() {
   const rows = document.querySelectorAll('#item-list tr');
   let subtotal = 0;
@@ -423,16 +407,18 @@ function calculateTotal() {
   document.getElementById('travel-fee-label').textContent = `Travel Fee (x${rows.length} sessions):`;
 }
 
-/* ---------- Filename helper (earliest lesson date) ---------- */
+/* ================= Filename helper ================= */
 function getEarliestDateForFilename() {
-  const dateInputs = Array.from(document.querySelectorAll('#item-list input[type="date"]')).map(i => i.value).filter(Boolean);
+  const dateInputs = Array.from(document.querySelectorAll('#item-list input[type="date"]'))
+    .map(i => i.value)
+    .filter(Boolean);
   if (!dateInputs.length) return null;
   const times = dateInputs.map(s => new Date(s + 'T00:00:00').getTime());
   const min = Math.min(...times);
   return formatDateShort(new Date(min)); // dd/mm/yyyy
 }
 
-/* ---------- Prepare for print: hide UI & empty sections ---------- */
+/* ================= Prepare for print ================= */
 function prepareForPrint() {
   // update descriptions
   document.querySelectorAll('#item-list tr').forEach(tr => {
@@ -443,10 +429,10 @@ function prepareForPrint() {
     if (descEl) updateRowDescText(descEl, lessonName, date, time);
   });
 
-  // hide UI-only sections
+  // hide UI
   document.getElementById('client-manager-section').classList.add('hide-for-export');
 
-  // hide notes section if empty
+  // hide notes if empty
   const notesEl = document.getElementById('invoice-notes');
   if (notesEl && notesEl.value.trim() === '') {
     document.getElementById('notes-section').classList.add('hide-for-export');
@@ -454,27 +440,26 @@ function prepareForPrint() {
     document.getElementById('notes-section').classList.remove('hide-for-export');
   }
 
-  // hide interactive controls (safety)
   document.querySelectorAll('.no-print').forEach(n => n.classList.add('hide-for-export'));
 
-  // set document title (filename)
+  // set filename
   const invNo = document.getElementById('invoice-number').value || 'Invoice';
-  const client = document.getElementById('client-name').value || 'Client';
+  const client = (document.getElementById('client-name').value || 'Client').replace(/\//g, '-');
   const earliest = getEarliestDateForFilename();
-  const fileDate = earliest ? earliest : formatDateShort(new Date());
-  document.title = sanitizeFilenameAllowSlashes(`${client} - ${fileDate} - ${invNo}`);
+  const fileDate = earliest ? earliest.replace(/\//g,'-') : formatDateShort(new Date()).replace(/\//g,'-');
+  document.title = sanitizeFilename(`${client} - ${fileDate} - ${invNo}`);
 
-  // call print
+  // print
   window.print();
 
-  // restore UI after short delay
+  // restore
   setTimeout(() => {
     document.querySelectorAll('.hide-for-export').forEach(el => el.classList.remove('hide-for-export'));
     document.title = 'Elliot Wardill Invoice Generator';
   }, 1000);
 }
 
-/* ---------- Init: populate selects and default row ---------- */
+/* ================= Init ================= */
 function populateLessonSelects() {
   const single = document.getElementById('single-lesson-type');
   const block = document.getElementById('block-lesson-type');
@@ -491,25 +476,25 @@ function populateLessonSelects() {
 window.addEventListener('DOMContentLoaded', () => {
   const todayISO = new Date().toISOString().split('T')[0];
   document.getElementById('invoice-date').textContent = new Date().toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
-  document.getElementById('due-date') && (document.getElementById('due-date').value = todayISO);
+  if (document.getElementById('due-date')) document.getElementById('due-date').value = todayISO;
   document.getElementById('invoice-number').value = 'EW-' + Math.floor(Math.random() * 90000 + 10000);
   populateLessonSelects();
-  // add a sample default row to make layout obvious
+  // default sample row
   createRow({ lessonName: 'Standard Lesson (60 Mins)', dateISO: todayISO, timeStr: '17:00', unitPrice: LESSON_OPTIONS['Standard Lesson (60 Mins)'] });
-  // hide forms when clicking outside menus
+
+  // click outside to hide forms
   document.addEventListener('click', e => {
     const form = document.getElementById('lesson-form');
     const block = document.getElementById('block-form');
     if (form && !form.contains(e.target) && !document.getElementById('add-lesson-btn')?.contains(e.target)) form.classList.add('hidden');
     if (block && !block.contains(e.target) && !document.getElementById('add-block-btn')?.contains(e.target)) block.classList.add('hidden');
   });
-  // recalc totals when editing any field inline
+
   document.getElementById('item-list').addEventListener('input', calculateTotal);
 });
 
-/* ---------- Expose functions so inline onclicks work ---------- */
+/* expose functions for inline onclicks */
 window.toggleLessonForm = toggleLessonForm;
-window.openLessonForm = toggleLessonForm;
 window.closeLessonForm = closeLessonForm;
 window.toggleBlockForm = toggleBlockForm;
 window.closeBlockForm = closeBlockForm;
@@ -518,28 +503,26 @@ window.generateBlock = generateBlock;
 window.createRow = createRow;
 window.calculateTotal = calculateTotal;
 window.prepareForPrint = prepareForPrint;
-
 </script>
 
-<!-- ---------- Firebase Client Manager (module) ---------- -->
+<!-- Firebase module: using the config you confirmed -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-analytics.js";
   import { getFirestore, collection, addDoc, getDocs, getDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
-  // Correct storageBucket and your config
   const firebaseConfig = {
     apiKey: "AIzaSyDZy7Y40rq-itG6AeZcihtIqVjzvfQqNtY",
     authDomain: "elliotinvoicemanager.firebaseapp.com",
     projectId: "elliotinvoicemanager",
-    storageBucket: "elliotinvoicemanager.appspot.com",
+    storageBucket: "elliotinvoicemanager.firebasestorage.app",
     messagingSenderId: "722602611594",
     appId: "1:722602611594:web:06c8159a236777d1f8ae73",
     measurementId: "G-R81851NH79"
   };
 
   const app = initializeApp(firebaseConfig);
-  try { getAnalytics(app); } catch(e) { /* ignore analytics issues */ }
+  try { getAnalytics(app); } catch(e) { /* ignore analytics errors */ }
   const db = getFirestore(app);
 
   function showClientMessage(type, text) {
@@ -561,18 +544,17 @@ window.prepareForPrint = prepareForPrint;
   window.confirmSaveClient = async () => {
     const name = document.getElementById('client-name').value.trim();
     const address = document.getElementById('client-address').value.trim();
-    if (!name) return showClientMessage('error', 'Enter client name before saving.');
+    if (!name) return showClientMessage('error','Enter client name before saving.');
     try {
       await addDoc(collection(db, "clients"), { name, address, createdAt: new Date().toISOString() });
       showClientMessage('success', `Saved "${name}"`);
       cancelSaveClient();
       await loadClients();
-      // auto-select the newly saved client (by name)
       const dd = document.getElementById('saved-clients');
       for (const opt of Array.from(dd.options)) { if (opt.textContent === name) { dd.value = opt.value; break; } }
     } catch(err) {
       console.error('Error saving client:', err);
-      showClientMessage('error', 'Error saving client (see console).');
+      showClientMessage('error','Error saving client (console).');
     }
   };
 
@@ -584,14 +566,12 @@ window.prepareForPrint = prepareForPrint;
       const snapshot = await getDocs(collection(db, "clients"));
       snapshot.forEach(docSnap => {
         const data = docSnap.data();
-        const opt = document.createElement('option');
-        opt.value = docSnap.id;
-        opt.textContent = data.name;
+        const opt = document.createElement('option'); opt.value = docSnap.id; opt.textContent = data.name;
         dd.appendChild(opt);
       });
     } catch(err) {
       console.error('Error loading clients:', err);
-      showClientMessage('error', 'Error loading clients (console).');
+      showClientMessage('error','Error loading clients (console).');
     }
   };
 
@@ -606,31 +586,31 @@ window.prepareForPrint = prepareForPrint;
         document.getElementById('client-address').value = data.address || '';
         showClientMessage('success', `Loaded "${data.name}"`);
       } else {
-        showClientMessage('error', 'Client not found.');
+        showClientMessage('error','Client not found.');
       }
     } catch(err) {
       console.error('Error loading client:', err);
-      showClientMessage('error', 'Error loading client (console).');
+      showClientMessage('error','Error loading client (console).');
     }
   };
 
   window.deleteClient = async () => {
     const id = document.getElementById('saved-clients').value;
-    if (!id) return showClientMessage('error', 'Select a client first');
+    if (!id) return showClientMessage('error','Select a client first');
     if (!confirm('Delete this client permanently?')) return;
     try {
       await deleteDoc(doc(db, 'clients', id));
-      showClientMessage('success', 'Client deleted');
+      showClientMessage('success','Client deleted');
       await loadClients();
       document.getElementById('client-name').value = '';
       document.getElementById('client-address').value = '';
     } catch(err) {
       console.error('Error deleting client:', err);
-      showClientMessage('error', 'Error deleting client (console).');
+      showClientMessage('error','Error deleting client (console).');
     }
   };
 
-  // expose for onclicks
+  // expose & init
   window.confirmSaveClient = window.confirmSaveClient;
   window.cancelSaveClient = window.cancelSaveClient;
   window.loadClients = window.loadClients;

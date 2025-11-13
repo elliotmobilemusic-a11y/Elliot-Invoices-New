@@ -7,14 +7,21 @@
     <link rel="icon" type="image/png" href="i-favicon.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* Print styles */
         @media print {
             body { background: white; font-size: 10pt; }
             .no-print { display: none !important; }
             .invoice-container { box-shadow: none !important; border: none !important; margin: 0; padding: 0; }
             .text-gray-700, .text-gray-900 { color: #000 !important; }
+            /* Ensure block end is highlighted on print */
+            .block-end-print { font-weight: 700; color: #3730A3 !important; }
         }
         body { font-family: 'Inter', sans-serif; background-color: #f7f9fb; }
         .invoice-container { max-width: 800px; margin: 2rem auto; background: white; border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); padding: 2.5rem; border: 1px solid #e5e7eb; }
+        .block-end { font-weight: 700; color: #3730A3; }
+        /* Print-only summary area (hidden on screen) */
+        .print-only { display: none; }
+        @media print { .print-only { display: block !important; } .screen-only { display: none !important; } }
     </style>
 </head>
 <body>
@@ -39,12 +46,12 @@
     <section class="py-6 border-b border-gray-100 grid grid-cols-2 gap-4 text-sm">
         <div>
             <h3 class="font-semibold text-gray-700 mb-2">BILL TO:</h3>
-            <input id="client-name" type="text" placeholder="Client Name" class="w-full p-2 border border-gray-300 rounded-lg mb-1">
+            <input id="client-name" type="text" placeholder="Client Full Name" class="w-full p-2 border border-gray-300 rounded-lg mb-1">
             <input id="client-address" type="text" placeholder="Address, Postcode" class="w-full p-2 border border-gray-300 rounded-lg">
         </div>
         <div class="text-right">
             <h3 class="font-semibold text-gray-700 mb-2">INVOICE DETAILS:</h3>
-            <input id="invoice-number" type="text" value="EW-" class="w-32 p-2 border border-gray-300 rounded-lg text-right mb-2">
+            <input id="invoice-number" type="text" value="EW-" class="w-40 p-2 border border-gray-300 rounded-lg text-right mb-2">
             <div class="text-sm text-gray-500">DUE DATE: <input id="due-date" type="date" class="border border-gray-300 rounded-lg p-1"></div>
             <div class="text-sm text-gray-500 mt-1">LESSON DATE: <input id="lesson-date" type="date" class="border border-gray-300 rounded-lg p-1"></div>
             <div class="text-sm text-gray-500 mt-1">LESSON TIME: <input id="lesson-time" type="time" class="border border-gray-300 rounded-lg p-1"></div>
@@ -80,7 +87,7 @@
                     <option value="0">Within 5 miles – £0</option>
                     <option value="5">5 miles+ – £5</option>
                     <option value="10">10 miles+ – £10</option>
-                    <option value="25">15 miles+ – £25</option>
+                    <option value="20">15 miles+ – £20</option>
                 </select>
             </div>
             <div class="flex justify-between items-center text-lg font-bold text-gray-800 border-t-4 border-indigo-500 pt-4">
@@ -90,14 +97,15 @@
         </div>
     </section>
 
-    <section class="mt-10 pt-6 border-t border-gray-200 grid md:grid-cols-2 gap-8 text-sm">
+    <!-- Block booking + print summary -->
+    <section class="mt-10 pt-6 border-t border-gray-200 grid md:grid-cols-2 gap-8 text-sm screen-only">
         <div>
             <h3 class="font-semibold text-gray-700 mb-2">BLOCK BOOKING:</h3>
             <label class="block mb-1 text-gray-600">Start Date</label>
             <input type="date" id="block-start" class="w-full p-2 border border-gray-300 rounded-lg mb-2" oninput="updateBlockEnd()">
             <label class="block mb-1 text-gray-600">Number of Weeks</label>
             <input type="number" id="block-weeks" min="1" class="w-full p-2 border border-gray-300 rounded-lg mb-2" oninput="updateBlockEnd()">
-            <p class="mt-2 text-gray-700">Block End Date: <span id="block-end" class="font-semibold">–</span></p>
+            <p class="mt-2 text-gray-700">Block End Date: <span id="block-end" class="block-end">–</span></p>
             <input type="text" id="installment-note" placeholder="e.g., Payment 1 of 3" class="w-full p-2 border border-gray-300 rounded-lg mt-2">
         </div>
         <div>
@@ -105,6 +113,11 @@
             <textarea id="invoice-notes" rows="4" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="Additional details or notes"></textarea>
         </div>
     </section>
+
+    <!-- Print-only block summary (hidden on screen, shown on print) -->
+    <div class="print-only mt-6 border-t border-gray-200 pt-4">
+        <p class="text-sm text-gray-700">Block Booking: <span id="print-block-info" class="block-end-print">Not selected</span></p>
+    </div>
 
     <section class="mt-10 border-t border-gray-200 pt-6 text-sm">
         <h3 class="font-semibold text-gray-700 mb-2">PAYMENT DETAILS:</h3>
@@ -116,10 +129,11 @@
 </div>
 
 <div class="no-print text-center py-6">
-    <button onclick="window.print()" class="px-8 py-3 bg-indigo-700 text-white font-bold rounded-lg hover:bg-indigo-800">Print / Save as PDF</button>
+    <button id="print-btn" onclick="triggerPrint()" class="px-8 py-3 bg-indigo-700 text-white font-bold rounded-lg hover:bg-indigo-800">Print / Save as PDF</button>
 </div>
 
 <script>
+    // Lesson options
     const LESSON_OPTIONS = {
         'Standard Lesson (30 Mins)': 15.00,
         'Standard Lesson (60 Mins)': 30.00,
@@ -180,11 +194,64 @@
         if(start && weeks>0){
             const startDate = new Date(start);
             startDate.setDate(startDate.getDate() + (weeks*7));
-            document.getElementById('block-end').textContent = startDate.toLocaleDateString('en-GB');
+            const formatted = startDate.toLocaleDateString('en-GB');
+            document.getElementById('block-end').textContent = formatted;
+            document.getElementById('block-end').classList.add('block-end');
         } else {
             document.getElementById('block-end').textContent = '–';
+            document.getElementById('block-end').classList.remove('block-end');
+        }
+        // Keep print summary in sync
+        syncPrintBlockInfo();
+    }
+
+    function syncPrintBlockInfo(){
+        const start = document.getElementById('block-start').value;
+        const weeks = parseInt(document.getElementById('block-weeks').value) || 0;
+        const printInfo = document.getElementById('print-block-info');
+        if(start && weeks>0){
+            const startDate = new Date(start);
+            startDate.setDate(startDate.getDate() + (weeks*7));
+            const formatted = startDate.toLocaleDateString('en-GB');
+            printInfo.textContent = `Ends ${formatted}`;
+        } else {
+            printInfo.textContent = 'Not selected';
         }
     }
+
+    // Prepare and trigger print with smart filename
+    function triggerPrint(){
+        prepareForPrint();
+        window.print();
+        // restore title after print (onafterprint may not fire consistently in some browsers)
+        setTimeout(()=>{ document.title = 'Elliot Wardill Invoice Generator'; }, 1000);
+    }
+
+    function sanitizeFilename(str){
+        return str.replace(/[^a-z0-9 \-_,.()]/gi,'').trim();
+    }
+
+    function prepareForPrint(){
+        // Set document title so browser's Save as PDF suggests it
+        const invoiceNo = document.getElementById('invoice-number').value || 'Invoice';
+        const client = document.getElementById('client-name').value || 'Client';
+        let lessonDate = document.getElementById('lesson-date').value;
+        if(!lessonDate){
+            // fallback to invoice-date shown text
+            lessonDate = new Date().toISOString().split('T')[0];
+        }
+        const filename = `${invoiceNo} - ${client} - ${lessonDate}`;
+        document.title = sanitizeFilename(filename);
+
+        // Sync print-only block info
+        syncPrintBlockInfo();
+
+        // If block isn't selected, ensure print shows 'Not selected' (handled by syncPrintBlockInfo)
+    }
+
+    // Bind before/after print too for better cross-browser behaviour
+    window.onbeforeprint = prepareForPrint;
+    window.onafterprint = function(){ document.title = 'Elliot Wardill Invoice Generator'; };
 
     window.onload = function(){
         const today = new Date().toISOString().split('T')[0];
@@ -192,6 +259,7 @@
         document.getElementById('invoice-date').textContent = new Date().toLocaleDateString('en-GB',{year:'numeric',month:'long',day:'numeric'});
         document.getElementById('invoice-number').value = 'EW-' + Math.floor(Math.random()*90000+10000);
         addItem();
+        syncPrintBlockInfo();
     }
 </script>
 </body>

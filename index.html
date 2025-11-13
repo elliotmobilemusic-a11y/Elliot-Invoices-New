@@ -8,42 +8,38 @@
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
-    /* ===== Print-first safe layout ===== */
+    /* ---------- Print styling (Chrome -> Save as PDF tuned) ---------- */
     @media print {
       body { background: white; font-size: 10pt; margin: 0.5cm; }
       .no-print { display: none !important; }
       .invoice-container { box-shadow: none !important; border: none !important; margin: 0; padding: 0; }
       .text-gray-700, .text-gray-900 { color: #000 !important; }
-      thead { display: table-header-group; } /* repeat header across pages */
+      thead { display: table-header-group; } /* ensure header repeats */
       table { width: 100%; border-collapse: collapse; table-layout: fixed; }
       input, textarea, select, button { border: none !important; box-shadow: none !important; }
       tr { page-break-inside: avoid; }
-      /* Hide any element we purposely mark as no-export */
-      .hide-for-export { display: none !important; }
+      .hide-for-export { display: none !important; } /* explicit hide class during export */
     }
 
-    /* ===== Page styling ===== */
-    body { font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background-color: #eef2ff; } /* indigo-50 */
+    /* ---------- Page visuals ---------- */
+    body { font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background-color: #eef2ff; }
     .invoice-wrapper { max-width: 1100px; margin: 2.5rem auto; padding: 1rem; }
     .invoice-container { background: white; border-radius: 1rem; padding: 1.25rem; box-shadow: 0 8px 24px rgba(15,23,42,0.06); border: 1px solid rgba(79,70,229,0.06); }
-
     .card { border-radius: 0.75rem; }
     .btn { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
 
-    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-
-    /* ===== Table column width rules (fixed layout) ===== */
+    /* ---------- Table fixed layout rules (no qty) ---------- */
     table { table-layout: fixed; width: 100%; }
-    th:nth-child(1), td:nth-child(1) { width: 45%; white-space: normal; word-wrap: break-word; overflow-wrap: anywhere; } /* Description */
-    th:nth-child(2), td:nth-child(2) { width: 12%; min-width: 100px; } /* Date */
-    th:nth-child(3), td:nth-child(3) { width: 10%; min-width: 95px; }  /* Time */
-    th:nth-child(4), td:nth-child(4) { width: 7%; min-width: 70px; }   /* Qty */
-    th:nth-child(5), td:nth-child(5) { width: 10%; min-width: 90px; }  /* Unit */
-    th:nth-child(6), td:nth-child(6) { width: 10%; min-width: 95px; }  /* Amount */
+    /* Columns: Description | Date | Time | Unit | Amount */
+    th:nth-child(1), td:nth-child(1) { width: 55%; white-space: normal; word-wrap: break-word; overflow-wrap: anywhere; }
+    th:nth-child(2), td:nth-child(2) { width: 13%; min-width: 100px; }
+    th:nth-child(3), td:nth-child(3) { width: 12%; min-width: 95px; }
+    th:nth-child(4), td:nth-child(4) { width: 10%; min-width: 80px; }
+    th:nth-child(5), td:nth-child(5) { width: 10%; min-width: 90px; }
 
     .desc-text { line-height: 1.25; display: block; }
 
-    /* Visual message for client manager */
+    /* small client message */
     .msg { padding: 0.5rem 0.75rem; border-radius: 8px; font-size: 0.95rem; }
     .msg.success { background: #ecfccb; color: #166534; border: 1px solid #bbf7d0; }
     .msg.error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
@@ -51,8 +47,8 @@
     @media (max-width: 640px) {
       .desc-text { max-width: 18rem; }
       .invoice-container { padding: 1rem; }
+      th, td { padding-left: 0.6rem; padding-right: 0.6rem; }
       .btn { width: 100%; }
-      th, td { padding-left: 0.75rem; padding-right: 0.75rem; }
     }
   </style>
 </head>
@@ -61,7 +57,7 @@
 <div class="invoice-wrapper">
   <div class="invoice-container card">
 
-    <!-- HEADER (kept visible in export) -->
+    <!-- HEADER (visible in export) -->
     <header class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start pb-4 border-b border-indigo-100">
       <div>
         <h1 class="text-4xl md:text-5xl font-extrabold text-indigo-700 tracking-tight">INVOICE</h1>
@@ -69,7 +65,7 @@
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3M3 11h18M5 21h14a2 2 0 002-2V8H3v11a2 2 0 002 2z"/>
           </svg>
-          <span id="invoice-date" class="font-medium">October 18, 2025</span>
+          <span id="invoice-date" class="font-medium"></span>
         </div>
       </div>
 
@@ -81,7 +77,7 @@
       </div>
     </header>
 
-    <!-- CLIENT MANAGER (UI only; hidden in export) -->
+    <!-- CLIENT MANAGER (UI only: hidden in export) -->
     <section id="client-manager-section" class="mt-6 no-print">
       <div class="p-4 rounded-lg bg-indigo-50 border border-indigo-100 card">
         <h3 class="text-sm font-semibold text-indigo-800 mb-3">Client Manager</h3>
@@ -107,7 +103,7 @@
       </div>
     </section>
 
-    <!-- BILL TO & INVOICE DETAILS (BOTH visible in export) -->
+    <!-- BILL TO & INVOICE DETAILS (visible in export) -->
     <section class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
       <div id="billto-section" class="p-4 bg-white card border border-indigo-50">
         <h3 class="text-sm font-semibold text-gray-700 mb-2">BILL TO:</h3>
@@ -120,43 +116,37 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <input id="invoice-number" type="text" value="EW-" class="p-3 border border-gray-200 rounded-lg text-right focus:ring-2 focus:ring-indigo-200" />
           <div class="p-3 border border-gray-100 rounded-lg bg-indigo-50 text-sm text-gray-700">DUE DATE: <input id="due-date" type="date" class="ml-2 text-sm" /></div>
-          <div class="col-span-2 text-xs text-gray-500 mt-1">Tip: use <span class="font-medium">Add Lesson ▾</span> to add single lessons or generate blocks.</div>
+          <div class="col-span-2 text-xs text-gray-500 mt-1">Tip: use Add Lesson ▾ or Block Booking to generate lessons (all rows editable).</div>
         </div>
       </div>
     </section>
 
-    <!-- LESSONS & FORMS (forms hidden in export) -->
+    <!-- LESSONS (Block Booking inside Lessons box - Option A) -->
     <section class="mt-6 p-0">
       <div class="bg-white card border border-indigo-50 p-4">
         <div class="flex items-center justify-between mb-3">
           <h4 class="font-semibold text-gray-700">Lessons</h4>
-
-          <div class="relative inline-block text-left no-print">
-            <button id="add-menu-btn" onclick="toggleAddMenu()" class="btn px-4 py-2 bg-indigo-700 text-white rounded-lg hover:bg-indigo-800 transition-shadow shadow-sm">
-              Add Lesson ▾
-            </button>
-            <div id="add-menu" class="hidden absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-40">
-              <button onclick="openSingleLessonForm()" class="block w-full text-left px-4 py-3 hover:bg-indigo-50">➕ Single Lesson</button>
-              <button onclick="openBlockBookingForm()" class="block w-full text-left px-4 py-3 hover:bg-indigo-50">📅 Block Booking</button>
-            </div>
+          <div class="flex gap-2 no-print">
+            <button id="add-lesson-btn" onclick="toggleLessonForm()" class="px-4 py-2 bg-indigo-700 text-white rounded-lg hover:bg-indigo-800">Add Lesson</button>
+            <button id="add-block-btn" onclick="toggleBlockForm()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Add Block Booking</button>
           </div>
         </div>
 
-        <!-- single-lesson inline form (no-print) -->
-        <div id="single-lesson-form" class="no-print hidden mb-4 p-3 border border-gray-100 rounded-lg bg-indigo-50">
+        <!-- SINGLE LESSON FORM (no-print) -->
+        <div id="lesson-form" class="no-print hidden mb-4 p-3 border border-gray-100 rounded-lg bg-indigo-50">
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <select id="single-lesson-type" class="p-3 border rounded-lg"></select>
             <input id="single-lesson-date" type="date" class="p-3 border rounded-lg" />
             <input id="single-lesson-time" type="time" class="p-3 border rounded-lg" />
           </div>
           <div class="mt-3 flex gap-2">
-            <button onclick="addSingleLessonFromForm()" class="btn px-4 py-2 bg-indigo-700 text-white rounded-lg hover:bg-indigo-800">Add</button>
-            <button onclick="closeSingleForm()" class="btn px-4 py-2 border rounded-lg">Cancel</button>
+            <button onclick="addSingleFromForm()" class="btn px-4 py-2 bg-indigo-700 text-white rounded-lg hover:bg-indigo-800">Add</button>
+            <button onclick="closeLessonForm()" class="btn px-4 py-2 border rounded-lg">Cancel</button>
           </div>
         </div>
 
-        <!-- block booking inline form (no-print) -->
-        <div id="block-booking-form" class="no-print hidden mb-4 p-3 border border-gray-100 rounded-lg bg-indigo-50">
+        <!-- BLOCK BOOKING FORM (no-print; inside lessons per Option A) -->
+        <div id="block-form" class="no-print hidden mb-4 p-3 border border-gray-100 rounded-lg bg-indigo-50">
           <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
             <select id="block-lesson-type" class="p-3 border rounded-lg"></select>
             <input id="block-start-date" type="date" class="p-3 border rounded-lg" />
@@ -164,15 +154,15 @@
             <input id="block-weeks" type="number" min="1" value="4" class="p-3 border rounded-lg" placeholder="Number of weeks" />
           </div>
           <div class="mt-3 flex items-center justify-between">
-            <div class="text-sm text-gray-600">Creates one lesson per week (7 days apart). You can edit individual rows after generation.</div>
+            <div class="text-sm text-gray-600">Generates one lesson per week (7 days apart). Each generated row remains editable.</div>
             <div class="flex gap-2">
-              <button onclick="generateBlockLessons()" class="btn px-4 py-2 bg-indigo-700 text-white rounded-lg hover:bg-indigo-800">Generate Block</button>
+              <button onclick="generateBlock()" class="btn px-4 py-2 bg-indigo-700 text-white rounded-lg hover:bg-indigo-800">Generate Block</button>
               <button onclick="closeBlockForm()" class="btn px-4 py-2 border rounded-lg">Cancel</button>
             </div>
           </div>
         </div>
 
-        <!-- lessons table -->
+        <!-- LESSON TABLE -->
         <div class="table-wrap">
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-indigo-700 text-white">
@@ -180,28 +170,26 @@
                 <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">Description</th>
                 <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">Date</th>
                 <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">Time</th>
-                <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider">Qty</th>
                 <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider">Unit (£)</th>
                 <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider">Amount (£)</th>
                 <th class="px-2 py-3 no-print"></th>
               </tr>
             </thead>
             <tbody id="item-list" class="bg-white divide-y divide-gray-100">
-              <!-- Rows inserted by JS -->
+              <!-- Rows injected by JS -->
             </tbody>
           </table>
         </div>
       </div>
     </section>
 
-    <!-- NOTES (hide in export if empty) -->
-    <section id="notes-section" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 no-export-if-empty">
-      <div class="p-4 bg-white card border border-indigo-50">
+    <!-- NOTES + TOTALS: notes hide if empty on export -->
+    <section id="notes-and-totals" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div id="notes-section" class="p-4 bg-white card border border-indigo-50 no-export-if-empty">
         <h3 class="font-semibold text-gray-700 mb-2">Notes</h3>
         <textarea id="invoice-notes" rows="4" class="w-full p-3 border border-gray-200 rounded-lg" placeholder="e.g., Payment due upon receipt. Next lesson booked for..."></textarea>
       </div>
 
-      <!-- Totals & Travel -->
       <div class="p-4 bg-white card border border-indigo-50 flex flex-col justify-between">
         <div>
           <div class="flex justify-between text-sm text-gray-600 mb-2">
@@ -239,7 +227,7 @@
       </div>
     </section>
 
-    <!-- PAYMENT details (kept in export) -->
+    <!-- PAYMENT details (kept visible in export) -->
     <section id="payment-section" class="mt-6">
       <div class="p-4 bg-white card border border-indigo-50">
         <h3 class="font-semibold text-gray-700 mb-2">Payment Details (Bank Transfer)</h3>
@@ -252,316 +240,294 @@
   </div>
 </div>
 
-<!-- main invoice JS -->
+<!-- ---------- Main JS (non-module) ---------- -->
 <script>
-  /******************************
-   * Config & helpers
-   ******************************/
-  const LESSON_OPTIONS = {
-    'Standard Lesson (30 Mins)': 15.00,
-    'Standard Lesson (60 Mins)': 30.00,
-    'Standard Lesson (120 Mins)': 50.00,
-    'Introductory Lesson': 10.00,
-    'Free Taster Session': 0.00
-  };
+/* ---------------- Configuration ---------------- */
+const LESSON_OPTIONS = {
+  'Standard Lesson (30 Mins)': 15.00,
+  'Standard Lesson (60 Mins)': 30.00,
+  'Standard Lesson (120 Mins)': 50.00,
+  'Introductory Lesson': 10.00,
+  'Free Taster Session': 0.00,
+  'Custom Item': 0.00
+};
 
-  function formatDateShortForDisplay(d) {
-    const dd = String(d.getDate()).padStart(2,'0');
-    const mm = String(d.getMonth()+1).padStart(2,'0');
-    const yy = d.getFullYear();
-    return dd + '/' + mm + '/' + yy;
-  }
-  function weekdayShort(d) {
-    return d.toLocaleDateString('en-GB', { weekday: 'short' });
-  }
-  function formatTimeTo12H(timeStr) {
-    if (!timeStr) return '';
-    const [h,m] = timeStr.split(':').map(Number);
-    const date = new Date(); date.setHours(h,m);
-    return date.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' });
-  }
+/* ---------- Helpers: date/time/formatting ---------- */
+function formatDateShort(d) {
+  const dd = String(d.getDate()).padStart(2,'0');
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const yy = d.getFullYear();
+  return dd + '/' + mm + '/' + yy;
+}
+function weekdayShort(d) {
+  return d.toLocaleDateString('en-GB', { weekday: 'short' });
+}
+function formatTimeTo12H(timeStr) {
+  if (!timeStr) return '';
+  const [h,m] = timeStr.split(':').map(Number);
+  const dt = new Date(); dt.setHours(h,m);
+  return dt.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' });
+}
+function sanitizeFilenameAllowSlashes(str) {
+  return str.replace(/[^a-z0-9 \\-_,.()\\/]/gi, '').trim();
+}
 
-  function sanitizeFilenameAllowSlashes(str) {
-    return str.replace(/[^a-z0-9 \\-_,.()\\/]/gi, '').trim();
-  }
+/* ---------- UI toggles ---------- */
+function toggleLessonForm() {
+  const el = document.getElementById('lesson-form');
+  el.classList.toggle('hidden');
+}
+function closeLessonForm() { document.getElementById('lesson-form').classList.add('hidden'); }
+function toggleBlockForm() {
+  const el = document.getElementById('block-form');
+  el.classList.toggle('hidden');
+}
+function closeBlockForm() { document.getElementById('block-form').classList.add('hidden'); }
 
-  /******************************
-   * UI toggles & forms
-   ******************************/
-  function toggleAddMenu() {
-    document.getElementById('add-menu').classList.toggle('hidden');
-  }
-  function openSingleLessonForm() { document.getElementById('single-lesson-form').classList.remove('hidden'); document.getElementById('add-menu').classList.add('hidden'); }
-  function closeSingleForm() { document.getElementById('single-lesson-form').classList.add('hidden'); }
-  function openBlockBookingForm() { document.getElementById('block-booking-form').classList.remove('hidden'); document.getElementById('add-menu').classList.add('hidden'); }
-  function closeBlockForm() { document.getElementById('block-booking-form').classList.add('hidden'); }
+/* ---------- Row creation & editing ---------- */
+function createRow({ lessonName, dateISO, timeStr, unitPrice }) {
+  const tbody = document.getElementById('item-list');
+  const tr = document.createElement('tr');
+  tr.className = 'item-row';
 
-  /******************************
-   * Row creation & events
-   ******************************/
-  function createRow({ lessonName, dateISO, timeStr, qty = 1, unitPrice = 0.00 }) {
-    const tbody = document.getElementById('item-list');
-    const tr = document.createElement('tr');
-    tr.className = 'item-row';
+  // Description cell
+  const tdDesc = document.createElement('td');
+  tdDesc.className = 'px-6 py-3';
+  const descDiv = document.createElement('div');
+  descDiv.className = 'desc-text text-gray-800 font-medium';
+  updateRowDescText(descDiv, lessonName, dateISO, timeStr);
+  tdDesc.appendChild(descDiv);
 
-    // description
-    const tdDesc = document.createElement('td');
-    tdDesc.className = 'px-6 py-3 align-top';
-    const desc = document.createElement('div');
-    desc.className = 'desc-text text-gray-800 font-medium';
-    updateRowDescriptionText(desc, lessonName, dateISO, timeStr);
-    tdDesc.appendChild(desc);
+  // Date cell
+  const tdDate = document.createElement('td');
+  tdDate.className = 'px-6 py-3';
+  const dateInput = document.createElement('input');
+  dateInput.type = 'date';
+  dateInput.value = dateISO || '';
+  dateInput.className = 'p-2 border rounded-lg';
+  tdDate.appendChild(dateInput);
 
-    // date
-    const tdDate = document.createElement('td');
-    tdDate.className = 'px-6 py-3 align-top';
-    const dateInput = document.createElement('input');
-    dateInput.type = 'date'; dateInput.value = dateISO || '';
-    dateInput.className = 'p-2 border rounded-lg';
-    tdDate.appendChild(dateInput);
+  // Time cell
+  const tdTime = document.createElement('td');
+  tdTime.className = 'px-6 py-3';
+  const timeInput = document.createElement('input');
+  timeInput.type = 'time';
+  timeInput.value = timeStr || '';
+  timeInput.className = 'p-2 border rounded-lg';
+  tdTime.appendChild(timeInput);
 
-    // time
-    const tdTime = document.createElement('td');
-    tdTime.className = 'px-6 py-3 align-top';
-    const timeInput = document.createElement('input');
-    timeInput.type = 'time'; timeInput.value = timeStr || '';
-    timeInput.className = 'p-2 border rounded-lg';
-    tdTime.appendChild(timeInput);
+  // Unit price cell
+  const tdUnit = document.createElement('td');
+  tdUnit.className = 'px-6 py-3 text-right';
+  const unitInput = document.createElement('input');
+  unitInput.type = 'number'; unitInput.min = '0'; unitInput.step = '0.01';
+  unitInput.value = (unitPrice || 0).toFixed(2);
+  unitInput.className = 'p-2 border-b border-gray-200 text-right';
+  tdUnit.appendChild(unitInput);
 
-    // qty
-    const tdQty = document.createElement('td');
-    tdQty.className = 'px-6 py-3 align-top text-right';
-    const qtyInput = document.createElement('input');
-    qtyInput.type = 'number'; qtyInput.min = '1'; qtyInput.value = qty;
-    qtyInput.className = 'item-qty w-20 p-2 text-right border-b border-gray-200';
-    tdQty.appendChild(qtyInput);
+  // Amount cell
+  const tdAmount = document.createElement('td');
+  tdAmount.className = 'px-6 py-3 text-right font-medium';
+  const amt = (parseFloat(unitInput.value) || 0).toFixed(2);
+  tdAmount.textContent = amt;
 
-    // price
-    const tdPrice = document.createElement('td');
-    tdPrice.className = 'px-6 py-3 align-top text-right';
-    const priceInput = document.createElement('input');
-    priceInput.type = 'number'; priceInput.min = '0'; priceInput.step = '0.01';
-    priceInput.value = parseFloat(unitPrice).toFixed(2);
-    priceInput.className = 'item-price w-24 p-2 text-right border-b border-gray-200';
-    tdPrice.appendChild(priceInput);
+  // Remove cell (no-print)
+  const tdRm = document.createElement('td');
+  tdRm.className = 'px-2 py-3 no-print';
+  const rmBtn = document.createElement('button');
+  rmBtn.className = 'text-red-500 hover:text-red-700';
+  rmBtn.innerHTML = '✕';
+  rmBtn.onclick = () => { tr.remove(); calculateTotal(); };
+  tdRm.appendChild(rmBtn);
 
-    // amount
-    const tdAmount = document.createElement('td');
-    tdAmount.className = 'px-6 py-3 align-top text-right font-medium';
-    tdAmount.textContent = (qty * unitPrice).toFixed(2);
+  // Append row
+  tr.append(tdDesc, tdDate, tdTime, tdUnit, tdAmount, tdRm);
+  tbody.appendChild(tr);
 
-    // remove
-    const tdRemove = document.createElement('td');
-    tdRemove.className = 'px-2 py-3 no-print';
-    const rmBtn = document.createElement('button');
-    rmBtn.className = 'text-red-500 hover:text-red-700';
-    rmBtn.innerHTML = '✕';
-    rmBtn.onclick = () => { tr.remove(); calculateTotal(); };
-    tdRemove.appendChild(rmBtn);
+  // Event listeners to keep description & totals updated
+  dateInput.addEventListener('input', () => { updateRowDescText(descDiv, lessonName, dateInput.value, timeInput.value); calculateTotal(); });
+  timeInput.addEventListener('input', () => { updateRowDescText(descDiv, lessonName, dateInput.value, timeInput.value); calculateTotal(); });
+  unitInput.addEventListener('input', () => { tdAmount.textContent = (parseFloat(unitInput.value || 0)).toFixed(2); calculateTotal(); });
 
-    tr.appendChild(tdDesc);
-    tr.appendChild(tdDate);
-    tr.appendChild(tdTime);
-    tr.appendChild(tdQty);
-    tr.appendChild(tdPrice);
-    tr.appendChild(tdAmount);
-    tr.appendChild(tdRemove);
-    tbody.appendChild(tr);
+  calculateTotal();
+  return tr;
+}
 
-    // listeners
-    dateInput.addEventListener('input', () => { updateRowDescriptionText(desc, lessonName, dateInput.value, timeInput.value); calculateTotal(); });
-    timeInput.addEventListener('input', () => { updateRowDescriptionText(desc, lessonName, dateInput.value, timeInput.value); calculateTotal(); });
-    qtyInput.addEventListener('input', () => { tdAmount.textContent = (parseFloat(qtyInput.value||0) * parseFloat(priceInput.value||0)).toFixed(2); calculateTotal(); });
-    priceInput.addEventListener('input', () => { tdAmount.textContent = (parseFloat(qtyInput.value||0) * parseFloat(priceInput.value||0)).toFixed(2); calculateTotal(); });
-
-    calculateTotal();
-    return tr;
-  }
-
-  function updateRowDescriptionText(el, lessonName, dateISO, timeStr) {
-    const parts = [lessonName];
-    if (dateISO) {
-      try {
-        const d = new Date(dateISO + 'T00:00:00');
-        const weekday = weekdayShort(d);
-        const dateStr = formatDateShortForDisplay(d);
-        if (timeStr) {
-          const timeFormatted = formatTimeTo12H(timeStr);
-          parts.push(`${weekday} ${timeFormatted} – ${dateStr}`);
-        } else {
-          parts.push(`${weekday} – ${dateStr}`);
-        }
-      } catch (e) {
-        parts.push(dateISO);
+function updateRowDescText(descEl, lessonName, dateISO, timeStr) {
+  const parts = [lessonName];
+  if (dateISO) {
+    try {
+      const d = new Date(dateISO + 'T00:00:00');
+      const wk = weekdayShort(d);
+      const ds = formatDateShort(d);
+      if (timeStr) {
+        const t12 = formatTimeTo12H(timeStr);
+        parts.push(`${wk} ${t12} – ${ds}`);
+      } else {
+        parts.push(`${wk} – ${ds}`);
       }
-    } else if (timeStr) {
-      parts.push(formatTimeTo12H(timeStr));
+    } catch (e) {
+      parts.push(dateISO);
     }
-    el.textContent = parts.join(' – ');
+  } else if (timeStr) {
+    parts.push(formatTimeTo12H(timeStr));
+  }
+  descEl.textContent = parts.join(' – ');
+}
+
+/* ---------- Single lesson flow ---------- */
+function addSingleFromForm() {
+  const type = document.getElementById('single-lesson-type').value;
+  const date = document.getElementById('single-lesson-date').value;
+  const time = document.getElementById('single-lesson-time').value;
+  if (!type) { alert('Select a lesson type'); return; }
+  const price = LESSON_OPTIONS[type] ?? 0;
+  createRow({ lessonName: type, dateISO: date, timeStr: time, unitPrice: price });
+  closeLessonForm();
+}
+
+/* ---------- Block booking flow ---------- */
+function generateBlock() {
+  const type = document.getElementById('block-lesson-type').value;
+  const start = document.getElementById('block-start-date').value;
+  const time = document.getElementById('block-time').value;
+  const weeks = parseInt(document.getElementById('block-weeks').value, 10) || 0;
+  if (!type) { alert('Choose a lesson type'); return; }
+  if (!start) { alert('Choose start date'); return; }
+  if (!weeks || weeks < 1) { alert('Enter number of weeks (>=1)'); return; }
+  const startDate = new Date(start + 'T00:00:00');
+  const price = LESSON_OPTIONS[type] ?? 0;
+  for (let i = 0; i < weeks; i++) {
+    const d = new Date(startDate);
+    d.setDate(startDate.getDate() + (i * 7));
+    const iso = d.toISOString().split('T')[0];
+    createRow({ lessonName: type, dateISO: iso, timeStr: time, unitPrice: price });
+  }
+  closeBlockForm();
+}
+
+/* ---------- Totals and travel-per-session ---------- */
+function calculateTotal() {
+  const rows = document.querySelectorAll('#item-list tr');
+  let subtotal = 0;
+  rows.forEach(tr => {
+    const unit = parseFloat(tr.querySelector('input[type="number"]').value) || 0;
+    tr.querySelector('td:nth-child(5)').textContent = unit.toFixed(2);
+    subtotal += unit;
+  });
+  const perTravel = parseFloat(document.getElementById('travel-fee').value) || 0;
+  const travelTotal = perTravel * rows.length;
+  document.getElementById('subtotal').textContent = '£' + subtotal.toFixed(2);
+  document.getElementById('travel-fee-total') && (document.getElementById('travel-fee-total').textContent = '£' + travelTotal.toFixed(2));
+  document.getElementById('grand-total').textContent = '£' + (subtotal + travelTotal).toFixed(2);
+  document.getElementById('travel-fee-label').textContent = `Travel Fee (x${rows.length} sessions):`;
+}
+
+/* ---------- Filename helper (earliest lesson date) ---------- */
+function getEarliestDateForFilename() {
+  const dateInputs = Array.from(document.querySelectorAll('#item-list input[type="date"]')).map(i => i.value).filter(Boolean);
+  if (!dateInputs.length) return null;
+  const times = dateInputs.map(s => new Date(s + 'T00:00:00').getTime());
+  const min = Math.min(...times);
+  return formatDateShort(new Date(min)); // dd/mm/yyyy
+}
+
+/* ---------- Prepare for print: hide UI & empty sections ---------- */
+function prepareForPrint() {
+  // update descriptions
+  document.querySelectorAll('#item-list tr').forEach(tr => {
+    const descEl = tr.querySelector('.desc-text');
+    const lessonName = descEl ? descEl.textContent.split(' – ')[0] : '';
+    const date = tr.querySelector('input[type="date"]').value;
+    const time = tr.querySelector('input[type="time"]').value;
+    if (descEl) updateRowDescText(descEl, lessonName, date, time);
+  });
+
+  // hide UI-only sections
+  document.getElementById('client-manager-section').classList.add('hide-for-export');
+
+  // hide notes section if empty
+  const notesEl = document.getElementById('invoice-notes');
+  if (notesEl && notesEl.value.trim() === '') {
+    document.getElementById('notes-section').classList.add('hide-for-export');
+  } else {
+    document.getElementById('notes-section').classList.remove('hide-for-export');
   }
 
-  /******************************
-   * Add single/block actions
-   ******************************/
-  function addSingleLesson(lessonName, dateISO, timeStr) {
-    const price = LESSON_OPTIONS[lessonName] ?? 0.00;
-    createRow({ lessonName, dateISO, timeStr, qty: 1, unitPrice: price });
-  }
-  function addSingleLessonFromForm() {
-    const lesson = document.getElementById('single-lesson-type').value;
-    const date = document.getElementById('single-lesson-date').value;
-    const time = document.getElementById('single-lesson-time').value;
-    if (!lesson) { alert('Please select a lesson type'); return; }
-    addSingleLesson(lesson, date, time);
-    closeSingleForm();
-  }
-  function generateBlockLessons() {
-    const lesson = document.getElementById('block-lesson-type').value;
-    const startDateISO = document.getElementById('block-start-date').value;
-    const time = document.getElementById('block-time').value;
-    const weeks = parseInt(document.getElementById('block-weeks').value) || 0;
-    if (!lesson) { alert('Choose a lesson type'); return; }
-    if (!startDateISO) { alert('Choose a start date'); return; }
-    if (!weeks || weeks < 1) { alert('Enter number of weeks (>=1)'); return; }
-    const startDate = new Date(startDateISO + 'T00:00:00');
-    for (let i = 0; i < weeks; i++) {
-      const d = new Date(startDate);
-      d.setDate(startDate.getDate() + (i * 7));
-      const iso = d.toISOString().split('T')[0];
-      addSingleLesson(lesson, iso, time);
-    }
-    closeBlockForm();
-  }
+  // hide interactive controls (safety)
+  document.querySelectorAll('.no-print').forEach(n => n.classList.add('hide-for-export'));
 
-  /******************************
-   * Totals, travel-per-session
-   ******************************/
-  function calculateTotal() {
-    let subtotal = 0;
-    const rows = document.querySelectorAll('#item-list tr');
-    rows.forEach(tr => {
-      const qty = parseFloat(tr.querySelector('.item-qty').value) || 0;
-      const price = parseFloat(tr.querySelector('.item-price').value) || 0;
-      const amount = qty * price;
-      const amountCell = tr.querySelector('td:nth-child(6)');
-      if (amountCell) amountCell.textContent = amount.toFixed(2);
-      subtotal += amount;
+  // set document title (filename)
+  const invNo = document.getElementById('invoice-number').value || 'Invoice';
+  const client = document.getElementById('client-name').value || 'Client';
+  const earliest = getEarliestDateForFilename();
+  const fileDate = earliest ? earliest : formatDateShort(new Date());
+  document.title = sanitizeFilenameAllowSlashes(`${client} - ${fileDate} - ${invNo}`);
+
+  // call print
+  window.print();
+
+  // restore UI after short delay
+  setTimeout(() => {
+    document.querySelectorAll('.hide-for-export').forEach(el => el.classList.remove('hide-for-export'));
+    document.title = 'Elliot Wardill Invoice Generator';
+  }, 1000);
+}
+
+/* ---------- Init: populate selects and default row ---------- */
+function populateLessonSelects() {
+  const single = document.getElementById('single-lesson-type');
+  const block = document.getElementById('block-lesson-type');
+  [single, block].forEach(s => { if (s) s.innerHTML = '<option value="" disabled selected>Select Lesson Type</option>'; });
+  Object.keys(LESSON_OPTIONS).forEach(name => {
+    [single, block].forEach(s => {
+      if (!s) return;
+      const opt = document.createElement('option'); opt.value = name; opt.textContent = name;
+      s.appendChild(opt);
     });
-    const lessonCount = rows.length;
-    const travelPerSession = parseFloat(document.getElementById('travel-fee').value) || 0;
-    const totalTravel = travelPerSession * lessonCount;
-    document.getElementById('travel-fee-label').textContent = `Travel Fee (x${lessonCount} sessions):`;
-    document.getElementById('travel-fee-total').textContent = '£' + totalTravel.toFixed(2);
-    const grand = subtotal + totalTravel;
-    document.getElementById('subtotal').textContent = '£' + subtotal.toFixed(2);
-    document.getElementById('grand-total').textContent = '£' + grand.toFixed(2);
-  }
+  });
+}
 
-  /******************************
-   * Filename helper (earliest lesson date)
-   ******************************/
-  function getEarliestLessonDateForFilename() {
-    const dateInputs = Array.from(document.querySelectorAll('#item-list input[type="date"]')).map(i => i.value).filter(v => v && v.trim().length > 0);
-    if (dateInputs.length === 0) return null;
-    const timestamps = dateInputs.map(s => new Date(s + 'T00:00:00').getTime());
-    const minTs = Math.min(...timestamps);
-    const d = new Date(minTs);
-    return formatDateShortForDisplay(d); // dd/mm/yyyy
-  }
+window.addEventListener('DOMContentLoaded', () => {
+  const todayISO = new Date().toISOString().split('T')[0];
+  document.getElementById('invoice-date').textContent = new Date().toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
+  document.getElementById('due-date') && (document.getElementById('due-date').value = todayISO);
+  document.getElementById('invoice-number').value = 'EW-' + Math.floor(Math.random() * 90000 + 10000);
+  populateLessonSelects();
+  // add a sample default row to make layout obvious
+  createRow({ lessonName: 'Standard Lesson (60 Mins)', dateISO: todayISO, timeStr: '17:00', unitPrice: LESSON_OPTIONS['Standard Lesson (60 Mins)'] });
+  // hide forms when clicking outside menus
+  document.addEventListener('click', e => {
+    const form = document.getElementById('lesson-form');
+    const block = document.getElementById('block-form');
+    if (form && !form.contains(e.target) && !document.getElementById('add-lesson-btn')?.contains(e.target)) form.classList.add('hidden');
+    if (block && !block.contains(e.target) && !document.getElementById('add-block-btn')?.contains(e.target)) block.classList.add('hidden');
+  });
+  // recalc totals when editing any field inline
+  document.getElementById('item-list').addEventListener('input', calculateTotal);
+});
 
-  /******************************
-   * Prepare for print: hide empty sections & update descriptions
-   ******************************/
-  function prepareForPrint() {
-    // Update descriptions from current row date/time
-    document.querySelectorAll('#item-list tr').forEach(tr => {
-      const descEl = tr.querySelector('.desc-text');
-      const lessonName = descEl ? descEl.textContent.split(' – ')[0] : '';
-      const date = tr.querySelector('input[type="date"]').value;
-      const time = tr.querySelector('input[type="time"]').value;
-      if (descEl) updateRowDescriptionText(descEl, lessonName, date, time);
-    });
+/* ---------- Expose functions so inline onclicks work ---------- */
+window.toggleLessonForm = toggleLessonForm;
+window.openLessonForm = toggleLessonForm;
+window.closeLessonForm = closeLessonForm;
+window.toggleBlockForm = toggleBlockForm;
+window.closeBlockForm = closeBlockForm;
+window.addSingleFromForm = addSingleFromForm;
+window.generateBlock = generateBlock;
+window.createRow = createRow;
+window.calculateTotal = calculateTotal;
+window.prepareForPrint = prepareForPrint;
 
-    // Hide UI-only and empty sections before printing:
-    // - client-manager is UI-only
-    document.getElementById('client-manager-section').classList.add('hide-for-export');
-
-    // - hide notes section if empty
-    const notesEl = document.getElementById('invoice-notes');
-    if (notesEl && notesEl.value.trim().length === 0) {
-      // hide the whole notes area
-      const notesSection = document.getElementById('notes-section');
-      if (notesSection) notesSection.classList.add('hide-for-export');
-    } else {
-      const notesSection = document.getElementById('notes-section');
-      if (notesSection) notesSection.classList.remove('hide-for-export');
-    }
-
-    // hide interactive controls (buttons/forms) - already no-print but add an extra safety class
-    document.querySelectorAll('.no-print').forEach(n => n.classList.add('hide-for-export'));
-
-    // Set filename in document title
-    const invoiceNo = document.getElementById('invoice-number').value || 'Invoice';
-    const client = document.getElementById('client-name').value || 'Client';
-    const earliest = getEarliestLessonDateForFilename();
-    const fileDate = earliest ? earliest : formatDateShortForDisplay(new Date());
-    const filename = `${client} - ${fileDate} - ${invoiceNo}`;
-    document.title = sanitizeFilenameAllowSlashes(filename);
-
-    // run print
-    window.print();
-
-    // restore UI after a short delay
-    setTimeout(() => {
-      // remove hide-for-export
-      document.querySelectorAll('.hide-for-export').forEach(el => el.classList.remove('hide-for-export'));
-      // restore title
-      document.title = 'Elliot Wardill Invoice Generator';
-    }, 1000);
-  }
-
-  /******************************
-   * Initialization & helpers
-   ******************************/
-  function populateLessonSelects() {
-    const blockSelect = document.getElementById('block-lesson-type');
-    const singleSelect = document.getElementById('single-lesson-type');
-    if (!blockSelect || !singleSelect) return;
-    blockSelect.innerHTML = ''; singleSelect.innerHTML = '';
-    const placeholder = document.createElement('option');
-    placeholder.disabled = true; placeholder.selected = true; placeholder.textContent = 'Select Lesson Type';
-    singleSelect.appendChild(placeholder.cloneNode(true));
-    blockSelect.appendChild(placeholder.cloneNode(true));
-    Object.keys(LESSON_OPTIONS).forEach(name => {
-      const o1 = document.createElement('option'); o1.value = name; o1.textContent = name; singleSelect.appendChild(o1);
-      const o2 = document.createElement('option'); o2.value = name; o2.textContent = name; blockSelect.appendChild(o2);
-    });
-  }
-
-  window.onload = function() {
-    const todayISO = new Date().toISOString().split('T')[0];
-    document.getElementById('due-date').value = todayISO;
-    document.getElementById('invoice-date').textContent = new Date().toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
-    document.getElementById('invoice-number').value = 'EW-' + Math.floor(Math.random()*90000 + 10000);
-    populateLessonSelects();
-    // start with a default row so layout is visible
-    addSingleLesson('Standard Lesson (60 Mins)', todayISO, '17:00');
-    // hide add menu when click outside
-    document.addEventListener('click', function(e) {
-      const menu = document.getElementById('add-menu'); const btn = document.getElementById('add-menu-btn');
-      if (menu && btn && !btn.contains(e.target) && !menu.contains(e.target)) menu.classList.add('hidden');
-    });
-    // recalc totals when editing
-    document.getElementById('item-list').addEventListener('input', function(){ calculateTotal(); });
-  };
 </script>
 
-<!-- Firebase client manager (module) - optional: keep if you want saving -->
+<!-- ---------- Firebase Client Manager (module) ---------- -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
   import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-analytics.js";
   import { getFirestore, collection, addDoc, getDocs, getDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
 
+  // Correct storageBucket and your config
   const firebaseConfig = {
     apiKey: "AIzaSyDZy7Y40rq-itG6AeZcihtIqVjzvfQqNtY",
     authDomain: "elliotinvoicemanager.firebaseapp.com",
@@ -573,33 +539,40 @@
   };
 
   const app = initializeApp(firebaseConfig);
-  try { getAnalytics(app); } catch(e) { /* ignore */ }
+  try { getAnalytics(app); } catch(e) { /* ignore analytics issues */ }
   const db = getFirestore(app);
 
   function showClientMessage(type, text) {
     const el = document.getElementById('client-msg');
+    if (!el) return;
     el.innerHTML = `<div class="msg ${type === 'success' ? 'success' : 'error'}">${text}</div>`;
     setTimeout(() => { if (el) el.innerHTML = ''; }, 4000);
   }
 
-  window.openClientSavePrompt = () => { document.getElementById('save-client-confirm').classList.remove('hidden'); document.getElementById('open-save-btn').classList.add('opacity-60'); };
-  window.cancelSaveClient = () => { document.getElementById('save-client-confirm').classList.add('hidden'); document.getElementById('open-save-btn').classList.remove('opacity-60'); };
+  window.openClientSavePrompt = () => {
+    document.getElementById('save-client-confirm').classList.remove('hidden');
+    document.getElementById('open-save-btn').classList.add('opacity-60');
+  };
+  window.cancelSaveClient = () => {
+    document.getElementById('save-client-confirm').classList.add('hidden');
+    document.getElementById('open-save-btn').classList.remove('opacity-60');
+  };
 
   window.confirmSaveClient = async () => {
-    const name = document.getElementById("client-name").value.trim();
-    const address = document.getElementById("client-address").value.trim();
-    if (!name) return showClientMessage('error','Enter client name before saving.');
+    const name = document.getElementById('client-name').value.trim();
+    const address = document.getElementById('client-address').value.trim();
+    if (!name) return showClientMessage('error', 'Enter client name before saving.');
     try {
       await addDoc(collection(db, "clients"), { name, address, createdAt: new Date().toISOString() });
       showClientMessage('success', `Saved "${name}"`);
       cancelSaveClient();
       await loadClients();
-      // auto-select saved client
-      const dropdown = document.getElementById("saved-clients");
-      for (const opt of Array.from(dropdown.options)) { if (opt.textContent === name) { dropdown.value = opt.value; break; } }
+      // auto-select the newly saved client (by name)
+      const dd = document.getElementById('saved-clients');
+      for (const opt of Array.from(dd.options)) { if (opt.textContent === name) { dd.value = opt.value; break; } }
     } catch(err) {
-      console.error(err);
-      showClientMessage('error','Error saving client (see console).');
+      console.error('Error saving client:', err);
+      showClientMessage('error', 'Error saving client (see console).');
     }
   };
 
@@ -610,11 +583,16 @@
     try {
       const snapshot = await getDocs(collection(db, "clients"));
       snapshot.forEach(docSnap => {
-        const d = docSnap.data();
-        const opt = document.createElement('option'); opt.value = docSnap.id; opt.textContent = d.name;
+        const data = docSnap.data();
+        const opt = document.createElement('option');
+        opt.value = docSnap.id;
+        opt.textContent = data.name;
         dd.appendChild(opt);
       });
-    } catch(err) { console.error('Error loading clients:', err); showClientMessage('error','Error loading clients'); }
+    } catch(err) {
+      console.error('Error loading clients:', err);
+      showClientMessage('error', 'Error loading clients (console).');
+    }
   };
 
   window.loadClient = async () => {
@@ -627,24 +605,32 @@
         document.getElementById('client-name').value = data.name || '';
         document.getElementById('client-address').value = data.address || '';
         showClientMessage('success', `Loaded "${data.name}"`);
+      } else {
+        showClientMessage('error', 'Client not found.');
       }
-    } catch(err) { console.error(err); showClientMessage('error','Error loading client'); }
+    } catch(err) {
+      console.error('Error loading client:', err);
+      showClientMessage('error', 'Error loading client (console).');
+    }
   };
 
   window.deleteClient = async () => {
     const id = document.getElementById('saved-clients').value;
-    if (!id) return showClientMessage('error','Select a client first');
+    if (!id) return showClientMessage('error', 'Select a client first');
     if (!confirm('Delete this client permanently?')) return;
     try {
-      await deleteDoc(doc(db,'clients',id));
-      showClientMessage('success','Client deleted');
+      await deleteDoc(doc(db, 'clients', id));
+      showClientMessage('success', 'Client deleted');
       await loadClients();
       document.getElementById('client-name').value = '';
       document.getElementById('client-address').value = '';
-    } catch(err) { console.error(err); showClientMessage('error','Error deleting client'); }
+    } catch(err) {
+      console.error('Error deleting client:', err);
+      showClientMessage('error', 'Error deleting client (console).');
+    }
   };
 
-  // expose for inline onclicks
+  // expose for onclicks
   window.confirmSaveClient = window.confirmSaveClient;
   window.cancelSaveClient = window.cancelSaveClient;
   window.loadClients = window.loadClients;

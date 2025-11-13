@@ -14,23 +14,44 @@
       .no-print { display: none !important; }
       .invoice-container { box-shadow: none !important; border: none !important; margin: 0; padding: 0; }
       .text-gray-700, .text-gray-900 { color: #000 !important; }
-      /* Ensure table headers print */
-      thead { display: table-header-group; }
+      thead { display: table-header-group; } /* ensure headers repeat */
+      /* slightly reduce font size for printing to help fit columns */
+      body, table { font-size: 10pt; }
+      input { border: none !important; box-shadow: none !important; }
     }
 
-    /* Small custom refinements */
-    body { font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background-color: #eef2ff; } /* subtle indigo-50 */
+    /* Page background & container */
+    body { font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background-color: #eef2ff; } /* indigo-50 */
     .invoice-wrapper { max-width: 1100px; margin: 2.5rem auto; padding: 1rem; }
-    .invoice-container { background: white; border-radius: 1rem; padding: 1.25rem; box-shadow: 0 8px 24px rgba(15,23,42,0.06); border: 1px solid rgba(99,102,241,0.06); }
+    .invoice-container { background: white; border-radius: 1rem; padding: 1.25rem; box-shadow: 0 8px 24px rgba(15,23,42,0.06); border: 1px solid rgba(79,70,229,0.06); } /* indigo-700 accent subtle border */
+
+    /* Cards & spacing */
     .card { border-radius: 0.75rem; }
-    .desc-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 34rem; display: inline-block; }
-    /* Make interactive controls comfortably large for touch */
+    .desc-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 38rem; display: inline-block; }
+
+    /* Touch targets */
     .btn { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+
     /* Table scroll on mobile */
     .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    /* Sticky header on desktop */
+
+    /* sticky header on larger screens */
     @media (min-width: 768px) {
-      thead th { position: sticky; top: 0; background: #eef2ff; z-index: 10; }
+      thead th { position: sticky; top: 0; background: #4f46e5; z-index: 10; }
+    }
+
+    /* Ensure date/time columns have min widths so they don't collapse when printing */
+    .col-date { min-width: 110px; }   /* keeps date visible */
+    .col-time { min-width: 100px; }   /* keeps time visible */
+    .col-qty { min-width: 80px; }
+    .col-unit { min-width: 100px; }
+    .col-amount { min-width: 110px; }
+
+    /* Responsive adjustments */
+    @media (max-width: 640px) {
+      .desc-text { max-width: 18rem; }
+      .invoice-container { padding: 1rem; }
+      .btn { width: 100%; }
     }
   </style>
 </head>
@@ -59,6 +80,23 @@
       </div>
     </header>
 
+    <!-- CLIENT MANAGER (indigo-tinted card) -->
+    <section class="mt-6">
+      <div class="p-4 rounded-lg bg-indigo-50 border border-indigo-100 card">
+        <h3 class="text-sm font-semibold text-indigo-800 mb-3">Client Manager</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <select id="saved-clients" onchange="loadClient()" class="p-3 border border-indigo-100 rounded-lg sm:col-span-2">
+            <option value="">Select Existing Client</option>
+          </select>
+          <div class="flex gap-2 sm:justify-end">
+            <button onclick="saveClient()" class="btn px-4 py-2 bg-indigo-700 text-white rounded-lg hover:bg-indigo-800">Save</button>
+            <button onclick="deleteClient()" class="btn px-4 py-2 border rounded-lg">Delete</button>
+          </div>
+        </div>
+        <p class="text-xs text-indigo-600 mt-3">Select a saved client to auto-fill the billing fields, or enter new client details then click Save.</p>
+      </div>
+    </section>
+
     <!-- CLIENT + INVOICE DETAILS (card) -->
     <section class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
       <div class="p-4 bg-white card border border-indigo-50">
@@ -69,10 +107,10 @@
 
       <div class="p-4 bg-white card border border-indigo-50">
         <h3 class="text-sm font-semibold text-gray-700 mb-2">INVOICE DETAILS:</h3>
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <input id="invoice-number" type="text" value="EW-" class="p-3 border border-gray-200 rounded-lg text-right focus:ring-2 focus:ring-indigo-200" />
           <div class="p-3 border border-gray-100 rounded-lg bg-indigo-50 text-sm text-gray-700">DUE DATE: <input id="due-date" type="date" class="ml-2 text-sm" /></div>
-          <div class="col-span-2 text-xs text-gray-500 mt-1">Tip: Use <span class="font-medium">Add Lesson ▾</span> to add single lessons or generate a block of lessons.</div>
+          <div class="col-span-2 text-xs text-gray-500 mt-1">Tip: use <span class="font-medium">Add Lesson ▾</span> to add single lessons or generate blocks of lessons.</div>
         </div>
       </div>
     </section>
@@ -85,7 +123,7 @@
 
           <!-- Add dropdown (Single / Block) -->
           <div class="relative inline-block text-left">
-            <button id="add-menu-btn" onclick="toggleAddMenu()" class="btn px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-shadow shadow-sm">
+            <button id="add-menu-btn" onclick="toggleAddMenu()" class="btn px-4 py-2 bg-indigo-700 text-white rounded-lg hover:bg-indigo-800 transition-shadow shadow-sm">
               Add Lesson ▾
             </button>
             <div id="add-menu" class="hidden absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-40">
@@ -103,7 +141,7 @@
             <input id="single-lesson-time" type="time" class="p-3 border rounded-lg" />
           </div>
           <div class="mt-3 flex gap-2">
-            <button onclick="addSingleLessonFromForm()" class="btn px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Add</button>
+            <button onclick="addSingleLessonFromForm()" class="btn px-4 py-2 bg-indigo-700 text-white rounded-lg hover:bg-indigo-800">Add</button>
             <button onclick="closeSingleForm()" class="btn px-4 py-2 border rounded-lg">Cancel</button>
           </div>
         </div>
@@ -119,7 +157,7 @@
           <div class="mt-3 flex items-center justify-between">
             <div class="text-sm text-gray-600">Creates one lesson per week (7 days apart). You can edit individual rows after generation.</div>
             <div class="flex gap-2">
-              <button onclick="generateBlockLessons()" class="btn px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Generate Block</button>
+              <button onclick="generateBlockLessons()" class="btn px-4 py-2 bg-indigo-700 text-white rounded-lg hover:bg-indigo-800">Generate Block</button>
               <button onclick="closeBlockForm()" class="btn px-4 py-2 border rounded-lg">Cancel</button>
             </div>
           </div>
@@ -130,12 +168,12 @@
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-indigo-700 text-white">
               <tr>
-                <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Description</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Date</th>
-                <th class="px-4 py-3 text-left text-xs font-semibold uppercase">Time</th>
-                <th class="px-4 py-3 text-right text-xs font-semibold uppercase">Qty</th>
-                <th class="px-4 py-3 text-right text-xs font-semibold uppercase">Unit (£)</th>
-                <th class="px-4 py-3 text-right text-xs font-semibold uppercase">Amount (£)</th>
+                <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">Description</th>
+                <th class="col-date px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">Date</th>
+                <th class="col-time px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider">Time</th>
+                <th class="col-qty px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider">Qty</th>
+                <th class="col-unit px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider">Unit (£)</th>
+                <th class="col-amount px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider">Amount (£)</th>
                 <th class="px-2 py-3 no-print"></th>
               </tr>
             </thead>
@@ -204,6 +242,7 @@
   </div>
 </div>
 
+<!-- main invoice JS (non-module) -->
 <script>
   /******************************
    * Configuration & constants
@@ -238,7 +277,7 @@
     return date.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' });
   }
 
-  // sanitize but allow slashes as requested
+  // sanitize allow slashes
   function sanitizeFilenameAllowSlashes(str) {
     return str.replace(/[^a-z0-9 \\-_,.()\\/]/gi, '').trim();
   }
@@ -254,7 +293,6 @@
   function openSingleLessonForm() {
     document.getElementById('add-menu').classList.add('hidden');
     document.getElementById('single-lesson-form').classList.remove('hidden');
-    // set a smart default date = tomorrow
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const iso = tomorrow.toISOString().split('T')[0];
@@ -271,35 +309,34 @@
   function closeBlockForm() { document.getElementById('block-booking-form').classList.add('hidden'); }
 
   /******************************
-   * Row creation and behavior
+   * Row creation & updates
    ******************************/
   function createRow({ lessonName, dateISO, timeStr, qty = 1, unitPrice = 0.00 }) {
     const tbody = document.getElementById('item-list');
 
-    // create row
     const tr = document.createElement('tr');
     tr.className = 'item-row';
 
-    // description cell
+    // description
     const descCell = document.createElement('td');
-    descCell.className = 'px-4 py-3 align-top';
+    descCell.className = 'px-6 py-3 align-top';
     const descDiv = document.createElement('div');
     descDiv.className = 'desc-text text-gray-800 font-medium';
     updateRowDescriptionText(descDiv, lessonName, dateISO, timeStr);
     descCell.appendChild(descDiv);
 
-    // date cell
+    // date
     const dateCell = document.createElement('td');
-    dateCell.className = 'px-4 py-3 align-top';
+    dateCell.className = 'col-date px-6 py-3 align-top';
     const dateInput = document.createElement('input');
     dateInput.type = 'date';
     dateInput.value = dateISO || '';
     dateInput.className = 'p-2 border rounded-lg';
     dateCell.appendChild(dateInput);
 
-    // time cell
+    // time
     const timeCell = document.createElement('td');
-    timeCell.className = 'px-4 py-3 align-top';
+    timeCell.className = 'col-time px-6 py-3 align-top';
     const timeInput = document.createElement('input');
     timeInput.type = 'time';
     timeInput.value = timeStr || '';
@@ -308,7 +345,7 @@
 
     // qty
     const qtyCell = document.createElement('td');
-    qtyCell.className = 'px-4 py-3 align-top text-right';
+    qtyCell.className = 'col-qty px-6 py-3 align-top text-right';
     const qtyInput = document.createElement('input');
     qtyInput.type = 'number';
     qtyInput.min = '1';
@@ -318,7 +355,7 @@
 
     // unit price
     const priceCell = document.createElement('td');
-    priceCell.className = 'px-4 py-3 align-top text-right';
+    priceCell.className = 'col-unit px-6 py-3 align-top text-right';
     const priceInput = document.createElement('input');
     priceInput.type = 'number';
     priceInput.min = '0';
@@ -329,7 +366,7 @@
 
     // amount
     const amountCell = document.createElement('td');
-    amountCell.className = 'px-4 py-3 align-top text-right font-medium';
+    amountCell.className = 'col-amount px-6 py-3 align-top text-right font-medium';
     amountCell.textContent = (qty * unitPrice).toFixed(2);
 
     // remove
@@ -351,7 +388,7 @@
     tr.appendChild(rmCell);
     tbody.appendChild(tr);
 
-    // events to keep in sync
+    // events
     dateInput.addEventListener('input', () => { updateRowDescriptionText(descDiv, lessonName, dateInput.value, timeInput.value); calculateTotal(); });
     timeInput.addEventListener('input', () => { updateRowDescriptionText(descDiv, lessonName, dateInput.value, timeInput.value); calculateTotal(); });
     qtyInput.addEventListener('input', () => { amountCell.textContent = (parseFloat(qtyInput.value||0) * parseFloat(priceInput.value||0)).toFixed(2); calculateTotal(); });
@@ -543,5 +580,99 @@
     });
   };
 </script>
+
+<!-- Firebase module for client saving / loading -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-analytics.js";
+  import { getFirestore, collection, addDoc, getDocs, getDoc, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDZy7Y40rq-itG6AeZcihtIqVjzvfQqNtY",
+    authDomain: "elliotinvoicemanager.firebaseapp.com",
+    projectId: "elliotinvoicemanager",
+    storageBucket: "elliotinvoicemanager.firebasestorage.app",
+    messagingSenderId: "722602611594",
+    appId: "1:722602611594:web:06c8159a236777d1f8ae73",
+    measurementId: "G-R81851NH79"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  // analytics optional
+  try { getAnalytics(app); } catch(e) { /* ignore if not available */ }
+  const db = getFirestore(app);
+
+  async function loadClients() {
+    const select = document.getElementById("saved-clients");
+    if (!select) return;
+    select.innerHTML = '<option value="">Select Existing Client</option>';
+    try {
+      const snapshot = await getDocs(collection(db, "clients"));
+      snapshot.forEach((snap) => {
+        const data = snap.data();
+        const opt = document.createElement("option");
+        opt.value = snap.id;
+        opt.textContent = data.name;
+        select.appendChild(opt);
+      });
+    } catch (err) {
+      console.error("Error loading clients:", err);
+    }
+  }
+
+  async function saveClient() {
+    const name = document.getElementById("client-name").value.trim();
+    const address = document.getElementById("client-address").value.trim();
+    if (!name) return alert("Please enter a client name");
+    try {
+      await addDoc(collection(db, "clients"), { name, address });
+      alert("Client saved!");
+      loadClients();
+    } catch (err) {
+      console.error("Error saving client:", err);
+      alert("Error saving client. Check console.");
+    }
+  }
+
+  async function loadClient() {
+    const id = document.getElementById("saved-clients").value;
+    if (!id) return;
+    try {
+      const docRef = doc(db, "clients", id);
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        const data = snap.data();
+        document.getElementById("client-name").value = data.name || "";
+        document.getElementById("client-address").value = data.address || "";
+      }
+    } catch (err) {
+      console.error("Error loading client:", err);
+      alert("Error loading client. Check console.");
+    }
+  }
+
+  async function deleteClient() {
+    const id = document.getElementById("saved-clients").value;
+    if (!id) return alert("Select a client first");
+    try {
+      await deleteDoc(doc(db, "clients", id));
+      alert("Client deleted");
+      loadClients();
+    } catch (err) {
+      console.error("Error deleting client:", err);
+      alert("Error deleting client. Check console.");
+    }
+  }
+
+  // Expose functions to global scope so onclick handlers in markup work
+  window.loadClients = loadClients;
+  window.saveClient = saveClient;
+  window.loadClient = loadClient;
+  window.deleteClient = deleteClient;
+
+  // Load clients when page initialized
+  window.addEventListener("DOMContentLoaded", loadClients);
+</script>
+
 </body>
 </html>

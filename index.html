@@ -81,21 +81,29 @@
     </header>
 
     <!-- CLIENT MANAGER (indigo-tinted card) -->
-    <section class="mt-6">
-      <div class="p-4 rounded-lg bg-indigo-50 border border-indigo-100 card">
-        <h3 class="text-sm font-semibold text-indigo-800 mb-3">Client Manager</h3>
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <select id="saved-clients" onchange="loadClient()" class="p-3 border border-indigo-100 rounded-lg sm:col-span-2">
-            <option value="">Select Existing Client</option>
-          </select>
-          <div class="flex gap-2 sm:justify-end">
-            <button onclick="saveClient()" class="btn px-4 py-2 bg-indigo-700 text-white rounded-lg hover:bg-indigo-800">Save</button>
-            <button onclick="deleteClient()" class="btn px-4 py-2 border rounded-lg">Delete</button>
-          </div>
-        </div>
-        <p class="text-xs text-indigo-600 mt-3">Select a saved client to auto-fill the billing fields, or enter new client details then click Save.</p>
+   <section class="mt-6">
+  <div class="p-4 rounded-lg bg-indigo-50 border border-indigo-100 card">
+    <h3 class="text-sm font-semibold text-indigo-800 mb-3">Client Manager</h3>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <select id="saved-clients" onchange="loadClient()" class="p-3 border border-indigo-200 rounded-lg sm:col-span-2">
+        <option value="">Select Existing Client</option>
+      </select>
+      <button onclick="openClientSavePrompt()" class="btn px-4 py-2 bg-indigo-700 text-white rounded-lg hover:bg-indigo-800">
+        + Save Client
+      </button>
+    </div>
+
+    <div id="save-client-confirm" class="hidden mt-4 bg-white p-3 rounded-lg border border-indigo-100">
+      <p class="text-sm text-gray-700 mb-3">Save current client details?</p>
+      <div class="flex gap-2">
+        <button onclick="confirmSaveClient()" class="btn px-4 py-2 bg-indigo-700 text-white rounded-lg">Save</button>
+        <button onclick="cancelSaveClient()" class="btn px-4 py-2 border rounded-lg">Cancel</button>
       </div>
-    </section>
+    </div>
+
+    <button onclick="deleteClient()" class="mt-3 text-sm text-red-600 hover:text-red-800">🗑️ Delete Selected Client</button>
+  </div>
+</section>
 
     <!-- CLIENT + INVOICE DETAILS (card) -->
     <section class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">

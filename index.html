@@ -32,6 +32,12 @@
             .text-gray-900 {
                 color: #000 !important;
             }
+
+            /* keep date/time visible when printing */
+            input[type="date"], input[type="time"] {
+                border: none;
+                background: transparent;
+            }
         }
 
         body {
@@ -117,17 +123,68 @@
             <tbody id="item-list" class="bg-white divide-y divide-gray-200"></tbody>
         </table>
 
-        <div class="no-print mt-4">
-            <button onclick="addItem()"
-                class="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2"
-                     viewBox="0 0 20 20" fill="currentColor">
-                     <path fill-rule="evenodd"
-                           d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-                           clip-rule="evenodd"/>
-                </svg>
-                Add Lesson
-            </button>
+        <div class="no-print mt-4 relative">
+            <!-- Dropdown / Inline block form (Option 1 requested) -->
+            <div class="inline-block text-left">
+                <div class="flex items-center space-x-2">
+                    <div class="relative">
+                        <button id="add-lesson-btn" onclick="toggleAddMenu()"
+                            class="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2"
+                                 viewBox="0 0 20 20" fill="currentColor">
+                                 <path fill-rule="evenodd"
+                                       d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+                                       clip-rule="evenodd"/>
+                            </svg>
+                            Add Lesson
+                            <svg id="chev" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+
+                        <div id="add-menu" class="origin-top-left absolute left-0 mt-2 w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 hidden z-10 p-3">
+                            <button onclick="addItem()" class="w-full text-left px-3 py-2 rounded hover:bg-gray-100">➕ Add Single Lesson</button>
+                            <hr class="my-2">
+                            <!-- Inline Block Lessons Form -->
+                            <div class="text-sm">
+                                <label class="font-semibold">Block of Lessons</label>
+                                <p class="text-xs text-gray-500 mb-2">Create multiple weekly lessons automatically.</p>
+
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="text-xs">Start Date</label>
+                                        <input id="block-start-date" type="date" class="w-full p-1 border border-gray-300 rounded text-sm" onchange="updateBlockPreview()">
+                                    </div>
+
+                                    <div>
+                                        <label class="text-xs">Start Time</label>
+                                        <input id="block-start-time" type="time" class="w-full p-1 border border-gray-300 rounded text-sm" onchange="updateBlockPreview()">
+                                    </div>
+
+                                    <div>
+                                        <label class="text-xs">Weeks</label>
+                                        <input id="block-weeks" type="number" min="1" value="4" class="w-full p-1 border border-gray-300 rounded text-sm" onchange="updateBlockPreview()">
+                                    </div>
+
+                                    <div>
+                                        <label class="text-xs">Lesson Type</label>
+                                        <select id="block-lesson-type" class="w-full p-1 border border-gray-300 rounded text-sm">
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="mt-2 text-xs text-gray-700">
+                                    <div>Last lesson date: <span id="block-end-date">—</span></div>
+                                </div>
+
+                                <div class="mt-3 flex justify-between">
+                                    <button onclick="generateBlock()" class="px-3 py-1 bg-indigo-500 text-white rounded text-sm">Create</button>
+                                    <button onclick="hideAddMenu()" class="px-3 py-1 bg-gray-100 rounded text-sm">Cancel</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
         </div>
     </section>
 
@@ -202,11 +259,22 @@ const LESSON_OPTIONS = {
     "Custom Item": 0.00
 };
 
+/* Populate block lesson type select */
+function populateBlockLessonTypes() {
+    const sel = document.getElementById('block-lesson-type');
+    sel.innerHTML = '';
+    for (const name of Object.keys(LESSON_OPTIONS)) {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        sel.appendChild(opt);
+    }
+}
+
 /* Create Lesson Selector */
 function createLessonSelect(defaultOption) {
-    let html = `<select onchange="updatePrice(this)"
-                class="lesson-select w-full p-1 border border-gray-300 rounded-lg text-sm">
-                    <option disabled selected>Select Lesson Type / Item</option>`;
+    let html = `<select onchange="updatePrice(this)" class="lesson-select w-full p-1 border border-gray-300 rounded-lg text-sm">
+                    <option disabled ${!defaultOption ? 'selected' : ''}>Select Lesson Type / Item</option>`;
 
     for (const [name, price] of Object.entries(LESSON_OPTIONS)) {
         html += `<option value="${name}" data-price="${price}" ${name === defaultOption ? "selected" : ""}>
@@ -219,17 +287,23 @@ function createLessonSelect(defaultOption) {
 }
 
 /* Add Line Item Row */
-function addItem(defaultOption = "Standard Lesson (60 Mins)") {
+function addItem(defaultOption = "Standard Lesson (60 Mins)", dateValue = '', timeValue = '') {
     const list = document.getElementById("item-list");
 
     const row = document.createElement("tr");
     row.className = "item-row";
 
-    const price = LESSON_OPTIONS[defaultOption];
+    const price = LESSON_OPTIONS[defaultOption] ?? 0;
 
     row.innerHTML = `
         <td class="px-6 py-4 text-sm text-gray-900">
             ${createLessonSelect(defaultOption)}
+            <div class="mt-2 text-xs text-gray-600">
+                <div class="flex items-center space-x-2">
+                    <input type="date" class="lesson-date p-1 border border-gray-200 rounded text-xs" value="${dateValue}">
+                    <input type="time" class="lesson-time p-1 border border-gray-200 rounded text-xs" value="${timeValue}">
+                </div>
+            </div>
         </td>
 
         <td class="px-6 py-4 text-right text-sm">
@@ -239,7 +313,7 @@ function addItem(defaultOption = "Standard Lesson (60 Mins)") {
         </td>
 
         <td class="px-6 py-4 text-right text-sm">
-            <input type="number" value="${price.toFixed(2)}" min="0" step="0.01"
+            <input type="number" value="${Number(price).toFixed(2)}" min="0" step="0.01"
                 class="item-price w-20 p-1 text-right border-b border-gray-300"
                 oninput="calculateTotal()">
         </td>
@@ -247,10 +321,7 @@ function addItem(defaultOption = "Standard Lesson (60 Mins)") {
         <td class="px-6 py-4 text-right text-sm font-medium total-amount">0.00</td>
 
         <td class="px-2 py-4 no-print">
-            <button onclick="removeItem(this)"
-                    class="text-red-500 hover:text-red-700">
-                    ✕
-            </button>
+            <button onclick="removeItem(this)" class="text-red-500 hover:text-red-700">✕</button>
         </td>
     `;
 
@@ -293,6 +364,56 @@ function calculateTotal() {
     document.getElementById("grand-total").textContent = `£${grandTotal.toFixed(2)}`;
 }
 
+/* Add Menu Controls */
+function toggleAddMenu() {
+    const menu = document.getElementById('add-menu');
+    menu.classList.toggle('hidden');
+}
+function hideAddMenu() {
+    document.getElementById('add-menu').classList.add('hidden');
+}
+
+/* Block lessons helpers */
+function updateBlockPreview() {
+    const start = document.getElementById('block-start-date').value;
+    const weeks = parseInt(document.getElementById('block-weeks').value) || 1;
+
+    if (!start) {
+        document.getElementById('block-end-date').textContent = '—';
+        return;
+    }
+
+    const startDate = new Date(start);
+    const lastDate = new Date(startDate);
+    lastDate.setDate(startDate.getDate() + (weeks - 1) * 7);
+
+    document.getElementById('block-end-date').textContent = lastDate.toLocaleDateString('en-GB');
+}
+
+function generateBlock() {
+    const start = document.getElementById('block-start-date').value;
+    const time = document.getElementById('block-start-time').value;
+    const weeks = parseInt(document.getElementById('block-weeks').value) || 1;
+    const lessonType = document.getElementById('block-lesson-type').value || 'Standard Lesson (60 Mins)';
+
+    if (!start) {
+        alert('Please choose a start date for the block of lessons.');
+        return;
+    }
+
+    const startDate = new Date(start);
+
+    for (let i = 0; i < weeks; i++) {
+        const lessonDate = new Date(startDate);
+        lessonDate.setDate(startDate.getDate() + i * 7);
+        const isoDate = lessonDate.toISOString().split('T')[0];
+
+        addItem(lessonType, isoDate, time);
+    }
+
+    hideAddMenu();
+}
+
 /* On Load */
 window.onload = () => {
     const today = new Date().toISOString().split("T")[0];
@@ -303,6 +424,9 @@ window.onload = () => {
 
     document.getElementById("invoice-number").value =
         "EW-" + Math.floor(10000 + Math.random() * 90000);
+
+    populateBlockLessonTypes();
+    updateBlockPreview();
 
     addItem();
 };

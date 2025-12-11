@@ -13,6 +13,98 @@
     <script>
         if ("serviceWorker" in navigator) {
             navigator.serviceWorker.register("service-worker.js");
+
+            <style>
+/* -----------------------------
+   RESPONSIVE MOBILE UPGRADE
+   (Keeps desktop EXACTLY the same)
+--------------------------------*/
+
+/* Mobile rules — triggers under 768px width */
+@media (max-width: 768px) {
+
+    body {
+        padding: 0;
+        margin: 0;
+        background: #ffffff;
+    }
+
+    .invoice-container {
+        width: 100%;
+        max-width: 100% !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+        padding: 1rem !important;
+        box-shadow: none !important;
+        border: none !important;
+    }
+
+    /* Header spacing */
+    header {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+    }
+
+    /* Bill To / Invoice No layout */
+    .grid-cols-2 {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Fix table overflow */
+    table {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        border-spacing: 0;
+    }
+
+    th, td {
+        white-space: nowrap;
+        padding: 0.5rem !important;
+    }
+
+    /* Add Lesson button full width */
+    #add-lesson-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Add Menu width fix */
+    #add-menu {
+        width: 100% !important;
+        left: 0 !important;
+        right: 0 !important;
+    }
+
+    /* Totals section */
+    .md\\:w-1\\/2 {
+        width: 100% !important;
+    }
+
+    /* Print button full width */
+    .no-print button {
+        width: 100%;
+    }
+}
+
+/* EVEN SMALLER devices under 430px (iPhone SE) */
+@media (max-width: 430px) {
+    h1, h2, h3 {
+        font-size: 90%;
+    }
+
+    input, select, textarea {
+        font-size: 14px !important;
+    }
+
+    #invoice-number {
+        width: 100px !important;
+    }
+}
+</style>
+
         }
     </script>
     <!-- ✅ END PWA CODE -->

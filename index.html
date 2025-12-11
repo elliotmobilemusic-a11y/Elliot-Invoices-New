@@ -7,6 +7,16 @@
     <link rel="icon" type="image/png" href="i-favicon.png" />
     <script src="https://cdn.tailwindcss.com"></script>
 
+    <!-- ✅ PWA INSTALL SUPPORT (added by ChatGPT) -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+    <script>
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("service-worker.js");
+        }
+    </script>
+    <!-- ✅ END PWA CODE -->
+
     <style>
         /* Print styles */
         @media print {
@@ -14,7 +24,6 @@
             .no-print { display: none !important; }
             .invoice-container { box-shadow: none !important; border: none !important; margin: 0; padding: 0; }
             .text-gray-700, .text-gray-900 { color: #000 !important; }
-            /* make date/time look clean when printing */
             input[type="date"], input[type="time"] { border: none; background: transparent; }
         }
 
@@ -30,6 +39,7 @@
         }
     </style>
 </head>
+
 <body>
 <div class="invoice-container" id="invoice-document">
 
@@ -358,7 +368,6 @@ function generateBlock() {
 function setDynamicFilename() {
     const name = (document.getElementById('client-name').value || 'Invoice').trim();
 
-    // Collect lesson dates in order they appear in DOM
     const dates = Array.from(document.querySelectorAll('.lesson-date'))
         .map(d => d.value).filter(Boolean).sort();
 
@@ -369,32 +378,25 @@ function setDynamicFilename() {
         datePart = `_${first}_to_${last}`;
     }
 
-    // Replace spaces with underscores and remove unsafe filename characters
     const safeName = name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_\-]/g, '');
 
-    // set document title so browser suggests it as the filename when printing/saving as PDF
     document.title = `${safeName}${datePart}`;
 }
 
 /* On Load */
 window.onload = () => {
-    // Set today's date for due date
     const today = new Date().toISOString().split("T")[0];
     document.getElementById("due-date").value = today;
 
-    // Human-readable invoice date in header
     document.getElementById("invoice-date").textContent =
         new Date().toLocaleDateString("en-GB", { year: "numeric", month: "long", day: "numeric" });
 
-    // Random invoice number
     document.getElementById("invoice-number").value =
         "EW-" + Math.floor(10000 + Math.random() * 90000);
 
-    // Populate lesson types for block generator
     populateBlockLessonTypes();
     updateBlockPreview();
 
-    // Start with one lesson row
     addItem();
 };
 </script>

@@ -1,35 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Elliot Wardill Invoice Generator</title>
-    <link rel="icon" type="image/png" href="i-favicon.png" />
-    <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Elliot Wardill Invoice Generator</title>
+  <link rel="icon" type="image/png" href="i-favicon.png" />
 
-    <!-- ✅ PWA INSTALL SUPPORT (added by ChatGPT) -->
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#4f46e5">
-    <script>
-        if ("serviceWorker" in navigator) {
-            navigator.serviceWorker.register("service-worker.js");
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
 
-            <style>
-/* -----------------------------
-   RESPONSIVE MOBILE UPGRADE
-   (Keeps desktop EXACTLY the same)
---------------------------------*/
+  <!-- ✅ PWA INSTALL SUPPORT -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#4f46e5" />
 
-/* Mobile rules — triggers under 768px width */
-@media (max-width: 768px) {
+  <style>
+    /* -----------------------------
+       RESPONSIVE MOBILE UPGRADE
+       (Keeps desktop EXACTLY the same)
+    --------------------------------*/
+    @media (max-width: 768px) {
+      body { padding: 0; margin: 0; background: #ffffff; }
 
-    body {
-        padding: 0;
-        margin: 0;
-        background: #ffffff;
-    }
-
-    .invoice-container {
+      .invoice-container {
         width: 100%;
         max-width: 100% !important;
         margin: 0 !important;
@@ -37,460 +29,1097 @@
         padding: 1rem !important;
         box-shadow: none !important;
         border: none !important;
-    }
+      }
 
-    /* Header spacing */
-    header {
-        flex-direction: column;
-        text-align: center;
-        gap: 1rem;
-    }
+      header { flex-direction: column; text-align: center; gap: 1rem; }
 
-    /* Bill To / Invoice No layout */
-    .grid-cols-2 {
-        grid-template-columns: 1fr !important;
-    }
+      .grid-cols-2 { grid-template-columns: 1fr !important; }
 
-    /* Fix table overflow */
-    table {
+      table {
         display: block;
         width: 100%;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
         border-spacing: 0;
+      }
+
+      th, td { white-space: nowrap; padding: 0.5rem !important; }
+
+      /* Add Item button full width */
+      #add-lesson-btn { width: 100%; justify-content: center; }
+
+      /* Add Menu width fix */
+      #add-menu { width: 100% !important; left: 0 !important; right: 0 !important; }
+
+      /* Totals section */
+      .md\:w-1\/2 { width: 100% !important; }
+
+      /* Buttons full width on mobile */
+      .no-print button { width: 100%; }
     }
 
-    th, td {
-        white-space: nowrap;
-        padding: 0.5rem !important;
+    /* EVEN SMALLER devices under 430px (iPhone SE) */
+    @media (max-width: 430px) {
+      h1, h2, h3 { font-size: 90%; }
+      input, select, textarea { font-size: 14px !important; }
+      #invoice-number { width: 110px !important; }
     }
 
-    /* Add Lesson button full width */
-    #add-lesson-btn {
-        width: 100%;
-        justify-content: center;
+    /* Print styles */
+    @media print {
+      body { background: white; font-size: 10pt; }
+      .no-print { display: none !important; }
+      .invoice-container { box-shadow: none !important; border: none !important; margin: 0; padding: 0; }
+      .text-gray-700, .text-gray-900 { color: #000 !important; }
+      input, select, textarea { border: none !important; background: transparent !important; box-shadow: none !important; }
+      input[type="date"], input[type="time"] { border: none !important; background: transparent !important; }
+
+      #receipt-document, #invoice-document { display: none !important; }
+      body[data-print-mode="invoice"] #invoice-document { display: block !important; }
+      body[data-print-mode="receipt"] #receipt-document { display: block !important; }
     }
 
-    /* Add Menu width fix */
-    #add-menu {
-        width: 100% !important;
-        left: 0 !important;
-        right: 0 !important;
+    body { font-family: "Inter", sans-serif; background-color: #f7f9fb; }
+
+    .invoice-container {
+      max-width: 800px;
+      margin: 2rem auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 0px 10px -5px rgba(0,0,0,0.04);
+      padding: 2.5rem;
+      border: 1px solid #e5e7eb;
+      position: relative;
     }
 
-    /* Totals section */
-    .md\\:w-1\\/2 {
-        width: 100% !important;
+    /* Paid stamp */
+    .paid-stamp {
+      position: absolute;
+      top: 96px;
+      right: 28px;
+      transform: rotate(12deg);
+      border: 4px solid rgba(16, 185, 129, 0.85);
+      color: rgba(16, 185, 129, 0.9);
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      font-size: 22px;
+      display: none;
+      pointer-events: none;
+      background: rgba(16, 185, 129, 0.06);
     }
+    .paid-stamp.show { display: block; }
 
-    /* Print button full width */
-    .no-print button {
-        width: 100%;
+    /* Tiny toast */
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      background: rgba(17, 24, 39, 0.95);
+      color: white;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 13px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+      z-index: 9999;
+      display: none;
+      max-width: calc(100% - 24px);
     }
-}
-
-/* EVEN SMALLER devices under 430px (iPhone SE) */
-@media (max-width: 430px) {
-    h1, h2, h3 {
-        font-size: 90%;
-    }
-
-    input, select, textarea {
-        font-size: 14px !important;
-    }
-
-    #invoice-number {
-        width: 100px !important;
-    }
-}
-</style>
-
-        }
-    </script>
-    <!-- ✅ END PWA CODE -->
-
-    <style>
-        /* Print styles */
-        @media print {
-            body { background: white; font-size: 10pt; }
-            .no-print { display: none !important; }
-            .invoice-container { box-shadow: none !important; border: none !important; margin: 0; padding: 0; }
-            .text-gray-700, .text-gray-900 { color: #000 !important; }
-            input[type="date"], input[type="time"] { border: none; background: transparent; }
-        }
-
-        body { font-family: "Inter", sans-serif; background-color: #f7f9fb; }
-        .invoice-container {
-            max-width: 800px;
-            margin: 2rem auto;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 0px 10px -5px rgba(0,0,0,0.04);
-            padding: 2.5rem;
-            border: 1px solid #e5e7eb;
-        }
-    </style>
+    .toast.show { display: block; }
+  </style>
 </head>
 
-<body>
+<body data-print-mode="invoice">
+
+<div id="toast" class="toast"></div>
+
+<!-- =======================
+     INVOICE DOCUMENT
+======================== -->
 <div class="invoice-container" id="invoice-document">
+  <div id="paid-stamp" class="paid-stamp">PAID</div>
 
-    <!-- Header -->
-    <header class="flex justify-between items-center pb-6 border-b border-indigo-200">
-        <div>
-            <h1 class="text-3xl font-extrabold text-indigo-700">INVOICE</h1>
-            <div class="mt-2 flex items-center space-x-2 text-sm text-gray-500">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                <span id="invoice-date"></span>
+  <!-- Header -->
+  <header class="flex justify-between items-center pb-6 border-b border-indigo-200">
+    <div>
+      <h1 class="text-3xl font-extrabold text-indigo-700">INVOICE</h1>
+      <div class="mt-2 flex items-center space-x-2 text-sm text-gray-500">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <span id="invoice-date"></span>
+      </div>
+    </div>
+
+    <div class="text-right">
+      <h2 class="text-xl font-semibold text-gray-900">Elliot Wardill Mobile Music Lessons</h2>
+      <p class="text-sm text-gray-600">Pudsey, UK</p>
+      <p class="text-sm text-gray-600">Email: elliotmobilemusic@gmail.com</p>
+      <p class="text-sm text-gray-600">Phone: 07368 975144</p>
+    </div>
+  </header>
+
+  <!-- Client + Invoice Info -->
+  <section class="py-6 border-b border-gray-100 grid grid-cols-2 gap-4 text-sm">
+    <div>
+      <h3 class="font-semibold text-gray-700 mb-2">BILL TO:</h3>
+      <input id="client-name" type="text" placeholder="Client Name" class="w-full p-2 border border-gray-300 rounded-lg mb-1" />
+      <input id="client-address" type="text" placeholder="Address, Postcode" class="w-full p-2 border border-gray-300 rounded-lg mb-1" />
+      <input id="client-email" type="email" placeholder="Client Email (for receipt)" class="w-full p-2 border border-gray-300 rounded-lg" />
+    </div>
+
+    <div class="text-right">
+      <h3 class="font-semibold text-gray-700 mb-2">INVOICE NO:</h3>
+      <input id="invoice-number" type="text" class="w-32 p-2 border border-gray-300 rounded-lg text-right" />
+      <p class="mt-3 text-gray-500">
+        DUE DATE:
+        <input id="due-date" type="date" class="border border-gray-300 rounded-lg p-1" />
+      </p>
+    </div>
+  </section>
+
+  <!-- Items Table -->
+  <section class="mt-8">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-indigo-50">
+        <tr>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+          <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Qty</th>
+          <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Unit (£)</th>
+          <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount (£)</th>
+          <th class="px-2 py-3 no-print"></th>
+        </tr>
+      </thead>
+      <tbody id="item-list" class="bg-white divide-y divide-gray-200"></tbody>
+    </table>
+
+    <!-- Add Menu -->
+    <div class="no-print mt-4">
+      <div class="inline-block text-left relative w-full sm:w-auto">
+        <button id="add-lesson-btn" type="button"
+          class="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 flex items-center"
+          aria-haspopup="true" aria-expanded="false">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd"/>
+          </svg>
+          Add Item
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        <div id="add-menu"
+          class="origin-top-left absolute left-0 mt-2 w-72 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 hidden z-10 p-3">
+          <button type="button" class="w-full text-left px-3 py-2 rounded hover:bg-gray-100" data-add="single">➕ Add Single Item</button>
+
+          <button type="button" class="w-full text-left px-3 py-2 rounded hover:bg-gray-100" data-add="band-session">
+            🥁 School Band Session (per child)
+          </button>
+
+          <button type="button" class="w-full text-left px-3 py-2 rounded hover:bg-gray-100" data-add="band-term-balance">
+            🎸 School Band Term (6 weeks) — balance after £10 deposit
+          </button>
+
+          <button type="button" class="w-full text-left px-3 py-2 rounded hover:bg-gray-100" data-add="band-term-full">
+            🎼 School Band Term (6 weeks) — full price (£90)
+          </button>
+
+          <button type="button" class="w-full text-left px-3 py-2 rounded hover:bg-gray-100" data-add="stripe-credit">
+            💳 Stripe deposit already paid — add credit (-£10)
+          </button>
+
+          <hr class="my-2" />
+
+          <div class="text-sm">
+            <label class="font-semibold">Block of Lessons (weekly)</label>
+            <p class="text-xs text-gray-500 mb-2">Create multiple weekly lessons automatically.</p>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="text-xs">Start Date</label>
+                <input id="block-start-date" type="date" class="w-full p-1 border border-gray-300 rounded text-sm" />
+              </div>
+
+              <div>
+                <label class="text-xs">Start Time</label>
+                <input id="block-start-time" type="time" class="w-full p-1 border border-gray-300 rounded text-sm" />
+              </div>
+
+              <div>
+                <label class="text-xs">Weeks</label>
+                <input id="block-weeks" type="number" min="1" value="4" class="w-full p-1 border border-gray-300 rounded text-sm" />
+              </div>
+
+              <div>
+                <label class="text-xs">Lesson Type</label>
+                <select id="block-lesson-type" class="w-full p-1 border border-gray-300 rounded text-sm"></select>
+              </div>
             </div>
-        </div>
 
-        <div class="text-right">
-            <h2 class="text-xl font-semibold text-gray-900">Elliot Wardill Mobile Music Lessons</h2>
-            <p class="text-sm text-gray-600">Pudsey, UK</p>
-            <p class="text-sm text-gray-600">Email: elliotmobilemusic@gmail.com</p>
-            <p class="text-sm text-gray-600">Phone: 07368 975144</p>
-        </div>
-    </header>
-
-    <!-- Client + Invoice Info -->
-    <section class="py-6 border-b border-gray-100 grid grid-cols-2 gap-4 text-sm">
-        <div>
-            <h3 class="font-semibold text-gray-700 mb-2">BILL TO:</h3>
-            <input id="client-name" type="text" placeholder="Client Name" class="w-full p-2 border border-gray-300 rounded-lg mb-1">
-            <input id="client-address" type="text" placeholder="Address, Postcode" class="w-full p-2 border border-gray-300 rounded-lg">
-        </div>
-
-        <div class="text-right">
-            <h3 class="font-semibold text-gray-700 mb-2">INVOICE NO:</h3>
-            <input id="invoice-number" type="text" class="w-32 p-2 border border-gray-300 rounded-lg text-right">
-            <p class="mt-3 text-gray-500">
-                DUE DATE:
-                <input id="due-date" type="date" class="border border-gray-300 rounded-lg p-1">
-            </p>
-        </div>
-    </section>
-
-    <!-- Lessons Table -->
-    <section class="mt-8">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-indigo-50">
-                <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Qty</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Unit (£)</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount (£)</th>
-                </tr>
-            </thead>
-            <tbody id="item-list" class="bg-white divide-y divide-gray-200"></tbody>
-        </table>
-
-        <div class="no-print mt-4">
-            <div class="inline-block text-left relative">
-                <button id="add-lesson-btn" onclick="toggleAddMenu()" class="px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd"/>
-                    </svg>
-                    Add Lesson
-                    <svg id="chev" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                </button>
-
-                <div id="add-menu" class="origin-top-left absolute left-0 mt-2 w-72 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 hidden z-10 p-3">
-                    <button onclick="addItem()" class="w-full text-left px-3 py-2 rounded hover:bg-gray-100">➕ Add Single Lesson</button>
-                    <hr class="my-2">
-
-                    <div class="text-sm">
-                        <label class="font-semibold">Block of Lessons</label>
-                        <p class="text-xs text-gray-500 mb-2">Create multiple weekly lessons automatically.</p>
-
-                        <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <label class="text-xs">Start Date</label>
-                                <input id="block-start-date" type="date" class="w-full p-1 border border-gray-300 rounded text-sm" onchange="updateBlockPreview()">
-                            </div>
-
-                            <div>
-                                <label class="text-xs">Start Time</label>
-                                <input id="block-start-time" type="time" class="w-full p-1 border border-gray-300 rounded text-sm" onchange="updateBlockPreview()">
-                            </div>
-
-                            <div>
-                                <label class="text-xs">Weeks</label>
-                                <input id="block-weeks" type="number" min="1" value="4" class="w-full p-1 border border-gray-300 rounded text-sm" onchange="updateBlockPreview()">
-                            </div>
-
-                            <div>
-                                <label class="text-xs">Lesson Type</label>
-                                <select id="block-lesson-type" class="w-full p-1 border border-gray-300 rounded text-sm"></select>
-                            </div>
-                        </div>
-
-                        <div class="mt-2 text-xs text-gray-700">
-                            <div>Last lesson date: <span id="block-end-date">—</span></div>
-                        </div>
-
-                        <div class="mt-3 flex justify-between">
-                            <button onclick="generateBlock()" class="px-3 py-1 bg-indigo-500 text-white rounded text-sm">Create</button>
-                            <button onclick="hideAddMenu()" class="px-3 py-1 bg-gray-100 rounded text-sm">Cancel</button>
-                        </div>
-                    </div>
-                </div>
+            <div class="mt-2 text-xs text-gray-700">
+              <div>Last lesson date: <span id="block-end-date">—</span></div>
             </div>
-        </div>
-    </section>
 
-    <!-- Totals -->
-    <section class="mt-8 flex justify-end">
-        <div class="w-full md:w-1/2">
-            <div class="space-y-2">
-                <div class="flex justify-between text-sm font-medium text-gray-700">
-                    <span>Subtotal:</span>
-                    <span id="subtotal" class="font-semibold text-gray-900">£0.00</span>
-                </div>
-
-                <div class="flex justify-between items-center text-sm font-medium text-gray-700 py-2 border-t border-gray-100">
-                    <div>
-                        <label for="travel-fee" class="text-sm font-semibold">Travel Fee</label>
-                        <p class="text-xs text-indigo-500">Check policy for rates.</p>
-                    </div>
-
-                    <div class="flex items-center space-x-2">
-                        <span>£</span>
-                        <input id="travel-fee" type="number" value="0.00" class="w-20 p-1 text-right border border-gray-300 rounded-lg" oninput="calculateTotal()">
-                    </div>
-                </div>
-
-                <div class="flex justify-between items-center text-lg font-bold text-gray-800 pt-4 border-t-4 border-indigo-500">
-                    <span>GRAND TOTAL DUE:</span>
-                    <span id="grand-total" class="text-indigo-700">£0.00</span>
-                </div>
+            <div class="mt-3 flex justify-between gap-2">
+              <button type="button" id="block-create" class="px-3 py-1 bg-indigo-500 text-white rounded text-sm w-1/2">Create</button>
+              <button type="button" id="block-cancel" class="px-3 py-1 bg-gray-100 rounded text-sm w-1/2">Cancel</button>
             </div>
+          </div>
         </div>
-    </section>
+      </div>
+    </div>
+  </section>
 
-    <!-- Notes + Payment -->
-    <section class="mt-12 pt-6 border-t border-gray-200 grid md:grid-cols-2 gap-8 text-sm">
+  <!-- Totals -->
+  <section class="mt-8 flex justify-end">
+    <div class="w-full md:w-1/2">
+      <div class="space-y-2">
+        <div class="flex justify-between text-sm font-medium text-gray-700">
+          <span>Subtotal:</span>
+          <span id="subtotal" class="font-semibold text-gray-900">£0.00</span>
+        </div>
+
+        <div class="flex justify-between items-center text-sm font-medium text-gray-700 py-2 border-t border-gray-100">
+          <div>
+            <label for="travel-fee" class="text-sm font-semibold">Travel Fee</label>
+            <p class="text-xs text-indigo-500">Check policy for rates.</p>
+          </div>
+
+          <div class="flex items-center space-x-2">
+            <span>£</span>
+            <input id="travel-fee" type="number" value="0.00" class="w-20 p-1 text-right border border-gray-300 rounded-lg" />
+          </div>
+        </div>
+
+        <div class="flex justify-between items-center text-lg font-bold text-gray-800 pt-4 border-t-4 border-indigo-500">
+          <span>GRAND TOTAL DUE:</span>
+          <span id="grand-total" class="text-indigo-700">£0.00</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Notes + Payment -->
+  <section class="mt-12 pt-6 border-t border-gray-200 grid md:grid-cols-2 gap-8 text-sm">
+    <div>
+      <h3 class="font-semibold text-gray-700 mb-2">NOTES:</h3>
+      <textarea id="invoice-notes" rows="3" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="Payment due upon receipt."></textarea>
+    </div>
+
+    <div>
+      <h3 class="font-semibold text-gray-700 mb-2">PAYMENT DETAILS:</h3>
+      <p class="text-gray-900 font-medium">Account Name: Elliot Wardill</p>
+      <p class="text-gray-900 font-medium">Sort Code: 56-00-36</p>
+      <p class="text-gray-900 font-medium">Account No: 40013987</p>
+    </div>
+  </section>
+
+  <!-- Paid / Receipt Controls -->
+  <section class="no-print mt-10 pt-6 border-t border-gray-200">
+    <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-4">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-            <h3 class="font-semibold text-gray-700 mb-2">NOTES:</h3>
-            <textarea id="invoice-notes" rows="3" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="Payment due upon receipt."></textarea>
+          <h3 class="font-semibold text-gray-800">Payment Status</h3>
+          <p class="text-sm text-gray-600">
+            Status: <span id="paid-badge" class="font-bold text-red-600">UNPAID</span>
+          </p>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-2">
+          <button type="button" id="mark-paid-btn" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-semibold">
+            Mark as Paid (send receipt)
+          </button>
+          <button type="button" id="mark-unpaid-btn" class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 font-semibold">
+            Mark as Unpaid
+          </button>
+        </div>
+      </div>
+
+      <div class="mt-4 grid md:grid-cols-3 gap-3 text-sm">
+        <div>
+          <label class="text-xs font-semibold text-gray-700">Paid Date</label>
+          <input id="paid-date" type="date" class="w-full p-2 border border-gray-300 rounded-lg" />
         </div>
 
         <div>
-            <h3 class="font-semibold text-gray-700 mb-2">PAYMENT DETAILS:</h3>
-            <p class="text-gray-900 font-medium">Account Name: Elliot Wardill</p>
-            <p class="text-gray-900 font-medium">Sort Code: 56-00-36</p>
-            <p class="text-gray-900 font-medium">Account No: 40013987</p>
+          <label class="text-xs font-semibold text-gray-700">Payment Method</label>
+          <select id="payment-method" class="w-full p-2 border border-gray-300 rounded-lg">
+            <option>Bank Transfer</option>
+            <option>Cash</option>
+            <option>Card</option>
+            <option>Stripe</option>
+            <option>Other</option>
+          </select>
         </div>
-    </section>
+
+        <div>
+          <label class="text-xs font-semibold text-gray-700">Reference (optional)</label>
+          <input id="payment-ref" type="text" placeholder="e.g. Stripe receipt / bank ref" class="w-full p-2 border border-gray-300 rounded-lg" />
+        </div>
+      </div>
+
+      <div class="mt-4 flex flex-col sm:flex-row gap-2">
+        <button type="button" id="email-receipt-btn" class="px-4 py-2 bg-indigo-700 text-white rounded-lg hover:bg-indigo-800 font-semibold">
+          Email Receipt
+        </button>
+        <button type="button" id="print-receipt-btn" class="px-4 py-2 bg-white border border-indigo-300 rounded-lg hover:bg-indigo-100 font-semibold">
+          Print Receipt
+        </button>
+        <button type="button" id="new-invoice-btn" class="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 font-semibold">
+          New Invoice (clear draft)
+        </button>
+      </div>
+
+      <p class="mt-3 text-xs text-gray-600">
+        Note: On a GitHub Pages/static site, “auto-send” means opening a pre-filled email draft for you to press Send.
+        For fully automatic sending, you’d need an email service + a tiny backend function.
+      </p>
+    </div>
+  </section>
 </div>
 
-<!-- Print Button -->
-<div class="no-print text-center py-6">
-    <button onclick="setDynamicFilename(); window.print()" class="px-8 py-3 bg-indigo-700 text-white font-bold rounded-lg hover:bg-indigo-800">
-        Print / Save as PDF
-    </button>
+<!-- Print Invoice Button -->
+<div class="no-print text-center py-6 space-y-2">
+  <button type="button" id="print-invoice-btn" class="px-8 py-3 bg-indigo-700 text-white font-bold rounded-lg hover:bg-indigo-800">
+    Print / Save Invoice PDF
+  </button>
+</div>
+
+<!-- =======================
+     RECEIPT DOCUMENT
+======================== -->
+<div class="invoice-container" id="receipt-document">
+  <header class="flex justify-between items-center pb-6 border-b border-emerald-200">
+    <div>
+      <h1 class="text-3xl font-extrabold text-emerald-700">RECEIPT</h1>
+      <p class="mt-2 text-sm text-gray-600">Payment confirmation for your records.</p>
+    </div>
+
+    <div class="text-right">
+      <h2 class="text-xl font-semibold text-gray-900">Elliot Wardill Mobile Music Lessons</h2>
+      <p class="text-sm text-gray-600">Pudsey, UK</p>
+      <p class="text-sm text-gray-600">Email: elliotmobilemusic@gmail.com</p>
+      <p class="text-sm text-gray-600">Phone: 07368 975144</p>
+    </div>
+  </header>
+
+  <section class="py-6 grid grid-cols-2 gap-4 text-sm border-b border-gray-100">
+    <div>
+      <h3 class="font-semibold text-gray-700 mb-2">RECEIPT TO:</h3>
+      <div class="text-gray-900 font-semibold" id="r-client-name">—</div>
+      <div class="text-gray-700" id="r-client-address">—</div>
+      <div class="text-gray-700" id="r-client-email">—</div>
+    </div>
+
+    <div class="text-right">
+      <div class="text-gray-700">
+        Receipt No: <span class="font-semibold text-gray-900" id="r-receipt-no">—</span>
+      </div>
+      <div class="text-gray-700 mt-1">
+        Invoice No: <span class="font-semibold text-gray-900" id="r-invoice-no">—</span>
+      </div>
+      <div class="text-gray-700 mt-1">
+        Paid Date: <span class="font-semibold text-gray-900" id="r-paid-date">—</span>
+      </div>
+      <div class="text-gray-700 mt-1">
+        Method: <span class="font-semibold text-gray-900" id="r-method">—</span>
+      </div>
+      <div class="text-gray-700 mt-1">
+        Ref: <span class="font-semibold text-gray-900" id="r-ref">—</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="mt-6">
+    <h3 class="font-semibold text-gray-700 mb-2">Items Paid</h3>
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-emerald-50">
+        <tr>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+          <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Qty</th>
+          <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Unit (£)</th>
+          <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Amount (£)</th>
+        </tr>
+      </thead>
+      <tbody id="r-item-list" class="bg-white divide-y divide-gray-200"></tbody>
+    </table>
+
+    <div class="mt-6 flex justify-end">
+      <div class="w-full md:w-1/2">
+        <div class="flex justify-between text-lg font-bold text-gray-800 pt-4 border-t-4 border-emerald-500">
+          <span>TOTAL PAID:</span>
+          <span id="r-total" class="text-emerald-700">£0.00</span>
+        </div>
+      </div>
+    </div>
+
+    <p class="mt-6 text-sm text-gray-700">
+      Thank you — your payment has been received.
+    </p>
+  </section>
 </div>
 
 <script>
-/* PRICE OPTIONS */
-const LESSON_OPTIONS = {
+  // ✅ Register service worker safely
+  document.addEventListener("DOMContentLoaded", () => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("service-worker.js").catch(() => {});
+    }
+  });
+
+  /* ==========================
+     CONFIG (Band deposit logic)
+  ========================== */
+  const BAND_TERM_FULL_PRICE = 90.00;
+  const STRIPE_DEPOSIT = 10.00;
+  const BAND_TERM_BALANCE = +(BAND_TERM_FULL_PRICE - STRIPE_DEPOSIT).toFixed(2); // 80.00
+
+  /* ==========================
+     PRICE OPTIONS
+  ========================== */
+  const LESSON_OPTIONS = {
     "Standard Lesson (30 Mins)": 15.00,
     "Standard Lesson (60 Mins)": 30.00,
     "Standard Lesson (120 Mins)": 50.00,
     "Introductory Lesson": 10.00,
     "Free Taster Session": 0.00,
     "Cancellation Fee (24 Hour Policy)": 0.00,
+
+    // ✅ School Band Programme (deposit-aware)
+    "School Band Programme (Per session, per child)": 15.00,
+    "School Band Programme (Term block – 6 weeks, per child) — balance after £10 deposit": BAND_TERM_BALANCE, // 80
+    "School Band Programme (Term block – 6 weeks, per child) — full price (£90)": BAND_TERM_FULL_PRICE,     // 90
+    "Stripe deposit already paid (credit)": -STRIPE_DEPOSIT, // -10
+
     "Custom Item": 0.00
-};
+  };
 
-/* Populate block lesson type select */
-function populateBlockLessonTypes() {
-    const sel = document.getElementById('block-lesson-type');
-    sel.innerHTML = '';
-    for (const name of Object.keys(LESSON_OPTIONS)) {
-        const opt = document.createElement('option');
-        opt.value = name;
-        opt.textContent = name;
-        sel.appendChild(opt);
-    }
-}
+  /* ==========================
+     HELPERS
+  ========================== */
+  const $ = (id) => document.getElementById(id);
+  const STORAGE_KEY = "emm_invoice_v3";
+  let autosaveTimer = null;
 
-/* Create Lesson Selector */
-function createLessonSelect(defaultOption) {
-    let html = '<select onchange="updatePrice(this)" class="lesson-select w-full p-1 border border-gray-300 rounded-lg text-sm">';
-    html += '<option disabled>Select Lesson Type / Item</option>';
-    for (const [name, price] of Object.entries(LESSON_OPTIONS)) {
-        const selected = (name === defaultOption) ? 'selected' : '';
-        html += `<option value="${name}" data-price="${price}" ${selected}>${name}</option>`;
-    }
-    html += '</select>';
-    return html;
-}
+  function fmtGBP(n) {
+    const num = Number(n || 0);
+    return `£${num.toFixed(2)}`;
+  }
 
-/* Add Line Item Row */
-function addItem(defaultOption = "Standard Lesson (60 Mins)", dateValue = '', timeValue = '') {
-    const list = document.getElementById("item-list");
+  function toast(msg) {
+    const t = $("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    setTimeout(() => t.classList.remove("show"), 2600);
+  }
 
-    const row = document.createElement("tr");
-    row.className = "item-row";
+  function escapeHtml(str) {
+    return String(str ?? "").replace(/[&<>"']/g, (m) => ({
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+    }[m]));
+  }
 
-    const price = LESSON_OPTIONS[defaultOption] ?? 0;
+  /* ==========================
+     ADD MENU
+  ========================== */
+  function showAddMenu() {
+    $("add-menu").classList.remove("hidden");
+    $("add-lesson-btn").setAttribute("aria-expanded", "true");
+  }
 
-    row.innerHTML = `
-        <td class="px-6 py-4 text-sm text-gray-900">
-            ${createLessonSelect(defaultOption)}
-            <div class="mt-2 text-xs text-gray-600">
-                <div class="flex items-center space-x-2">
-                    <input type="date" class="lesson-date p-1 border border-gray-200 rounded text-xs" value="${dateValue}">
-                    <input type="time" class="lesson-time p-1 border border-gray-200 rounded text-xs" value="${timeValue}">
-                </div>
-            </div>
-        </td>
+  function hideAddMenu() {
+    $("add-menu").classList.add("hidden");
+    $("add-lesson-btn").setAttribute("aria-expanded", "false");
+  }
 
-        <td class="px-6 py-4 text-right text-sm">
-            <input type="number" value="1" min="1"
-                class="item-qty w-16 p-1 text-right border-b border-gray-300"
-                oninput="calculateTotal()">
-        </td>
+  function toggleAddMenu() {
+    const isHidden = $("add-menu").classList.contains("hidden");
+    if (isHidden) showAddMenu(); else hideAddMenu();
+  }
 
-        <td class="px-6 py-4 text-right text-sm">
-            <input type="number" value="${Number(price).toFixed(2)}" min="0" step="0.01"
-                class="item-price w-20 p-1 text-right border-b border-gray-300"
-                oninput="calculateTotal()">
-        </td>
-
-        <td class="px-6 py-4 text-right text-sm font-medium total-amount">0.00</td>
-
-        <td class="px-2 py-4 no-print">
-            <button onclick="removeItem(this)" class="text-red-500 hover:text-red-700">✕</button>
-        </td>
-    `;
-
-    list.appendChild(row);
-    calculateTotal();
-}
-
-/* Remove Item */
-function removeItem(btn) {
-    btn.closest(".item-row").remove();
-    calculateTotal();
-}
-
-/* Update Price When Lesson Type Changes */
-function updatePrice(select) {
-    const price = select.selectedOptions[0].dataset.price;
-    const row = select.closest(".item-row");
-    row.querySelector(".item-price").value = Number(price).toFixed(2);
-    calculateTotal();
-}
-
-/* Calculate Totals */
-function calculateTotal() {
-    let subtotal = 0;
-
-    document.querySelectorAll(".item-row").forEach(row => {
-        const qty = parseFloat(row.querySelector(".item-qty").value) || 0;
-        const price = parseFloat(row.querySelector(".item-price").value) || 0;
-
-        const total = qty * price;
-        row.querySelector(".total-amount").textContent = total.toFixed(2);
-
-        subtotal += total;
+  /* ==========================
+     BLOCK LESSONS
+  ========================== */
+  function populateBlockLessonTypes() {
+    const sel = $("block-lesson-type");
+    sel.innerHTML = "";
+    Object.keys(LESSON_OPTIONS).forEach((name) => {
+      const opt = document.createElement("option");
+      opt.value = name;
+      opt.textContent = name;
+      sel.appendChild(opt);
     });
+  }
 
-    const travelFee = parseFloat(document.getElementById("travel-fee").value) || 0;
-    const grandTotal = subtotal + travelFee;
+  function updateBlockPreview() {
+    const start = $("block-start-date").value;
+    const weeks = parseInt($("block-weeks").value, 10) || 1;
 
-    document.getElementById("subtotal").textContent = `£${subtotal.toFixed(2)}`;
-    document.getElementById("grand-total").textContent = `£${grandTotal.toFixed(2)}`;
-}
-
-/* Add Menu Controls */
-function toggleAddMenu() {
-    const menu = document.getElementById('add-menu');
-    menu.classList.toggle('hidden');
-}
-function hideAddMenu() {
-    document.getElementById('add-menu').classList.add('hidden');
-}
-
-/* Block lessons helpers */
-function updateBlockPreview() {
-    const start = document.getElementById('block-start-date').value;
-    const weeks = parseInt(document.getElementById('block-weeks').value) || 1;
-
-    if (!start) {
-        document.getElementById('block-end-date').textContent = '—';
-        return;
-    }
+    if (!start) { $("block-end-date").textContent = "—"; return; }
 
     const startDate = new Date(start);
     const lastDate = new Date(startDate);
     lastDate.setDate(startDate.getDate() + (weeks - 1) * 7);
+    $("block-end-date").textContent = lastDate.toLocaleDateString("en-GB");
+  }
 
-    document.getElementById('block-end-date').textContent = lastDate.toLocaleDateString('en-GB');
-}
+  function generateBlock() {
+    const start = $("block-start-date").value;
+    const time = $("block-start-time").value;
+    const weeks = parseInt($("block-weeks").value, 10) || 1;
+    const lessonType = $("block-lesson-type").value || "Standard Lesson (60 Mins)";
 
-function generateBlock() {
-    const start = document.getElementById('block-start-date').value;
-    const time = document.getElementById('block-start-time').value;
-    const weeks = parseInt(document.getElementById('block-weeks').value) || 1;
-    const lessonType = document.getElementById('block-lesson-type').value || 'Standard Lesson (60 Mins)';
-
-    if (!start) {
-        alert('Please choose a start date for the block of lessons.');
-        return;
-    }
+    if (!start) { alert("Please choose a start date for the block of lessons."); return; }
 
     const startDate = new Date(start);
-
     for (let i = 0; i < weeks; i++) {
-        const lessonDate = new Date(startDate);
-        lessonDate.setDate(startDate.getDate() + i * 7);
-        const isoDate = lessonDate.toISOString().split('T')[0];
-        addItem(lessonType, isoDate, time);
+      const d = new Date(startDate);
+      d.setDate(startDate.getDate() + i * 7);
+      const iso = d.toISOString().split("T")[0];
+      addItem(lessonType, iso, time);
     }
 
     hideAddMenu();
-}
+    calculateTotal();
+    autosaveSoon();
+  }
 
-// Set dynamic filename before printing
-function setDynamicFilename() {
-    const name = (document.getElementById('client-name').value || 'Invoice').trim();
+  /* ==========================
+     ROWS / ITEMS
+  ========================== */
+  function createLessonSelect(defaultOption) {
+    let html = '<select class="lesson-select w-full p-1 border border-gray-300 rounded-lg text-sm">';
+    html += '<option disabled>Select Lesson Type / Item</option>';
+    for (const [name, price] of Object.entries(LESSON_OPTIONS)) {
+      const selected = (name === defaultOption) ? "selected" : "";
+      html += `<option value="${escapeHtml(name)}" data-price="${price}" ${selected}>${escapeHtml(name)}</option>`;
+    }
+    html += "</select>";
+    return html;
+  }
 
-    const dates = Array.from(document.querySelectorAll('.lesson-date'))
-        .map(d => d.value).filter(Boolean).sort();
+  function addItem(defaultOption = "Standard Lesson (60 Mins)", dateValue = "", timeValue = "", qtyValue = 1, priceOverride = null) {
+    const list = $("item-list");
 
-    let datePart = '';
-    if (dates.length > 0) {
-        const first = dates[0];
-        const last = dates[dates.length - 1];
-        datePart = `_${first}_to_${last}`;
+    const row = document.createElement("tr");
+    row.className = "item-row";
+
+    const basePrice = LESSON_OPTIONS[defaultOption] ?? 0;
+    const price = (priceOverride !== null && priceOverride !== undefined) ? Number(priceOverride) : Number(basePrice);
+
+    row.innerHTML = `
+      <td class="px-6 py-4 text-sm text-gray-900">
+        ${createLessonSelect(defaultOption)}
+        <div class="mt-2 text-xs text-gray-600">
+          <div class="flex items-center space-x-2">
+            <input type="date" class="lesson-date p-1 border border-gray-200 rounded text-xs" value="${dateValue}">
+            <input type="time" class="lesson-time p-1 border border-gray-200 rounded text-xs" value="${timeValue}">
+          </div>
+        </div>
+      </td>
+
+      <td class="px-6 py-4 text-right text-sm">
+        <input type="number" value="${Number(qtyValue) || 1}" min="1"
+          class="item-qty w-16 p-1 text-right border-b border-gray-300">
+      </td>
+
+      <td class="px-6 py-4 text-right text-sm">
+        <input type="number" value="${Number(price).toFixed(2)}" min="-99999" step="0.01"
+          class="item-price w-20 p-1 text-right border-b border-gray-300">
+      </td>
+
+      <td class="px-6 py-4 text-right text-sm font-medium total-amount">0.00</td>
+
+      <td class="px-2 py-4 no-print">
+        <button type="button" class="remove-row text-red-500 hover:text-red-700" aria-label="Remove item">✕</button>
+      </td>
+    `;
+
+    list.appendChild(row);
+
+    // Wire events for this row
+    const sel = row.querySelector(".lesson-select");
+    const qty = row.querySelector(".item-qty");
+    const priceEl = row.querySelector(".item-price");
+    const dateEl = row.querySelector(".lesson-date");
+    const timeEl = row.querySelector(".lesson-time");
+    const removeBtn = row.querySelector(".remove-row");
+
+    sel.addEventListener("change", () => {
+      const p = Number(sel.selectedOptions[0].dataset.price || 0);
+      priceEl.value = p.toFixed(2);
+      calculateTotal();
+      autosaveSoon();
+    });
+
+    [qty, priceEl, dateEl, timeEl].forEach(el => {
+      el.addEventListener("input", () => { calculateTotal(); autosaveSoon(); });
+      el.addEventListener("change", () => { calculateTotal(); autosaveSoon(); });
+    });
+
+    removeBtn.addEventListener("click", () => {
+      row.remove();
+      calculateTotal();
+      autosaveSoon();
+    });
+
+    calculateTotal();
+    autosaveSoon();
+  }
+
+  /* ==========================
+     TOTALS
+  ========================== */
+  function calculateTotal() {
+    let subtotal = 0;
+
+    document.querySelectorAll(".item-row").forEach(row => {
+      const qty = parseFloat(row.querySelector(".item-qty").value) || 0;
+      const price = parseFloat(row.querySelector(".item-price").value) || 0;
+      const amount = qty * price;
+
+      row.querySelector(".total-amount").textContent = amount.toFixed(2);
+      subtotal += amount;
+    });
+
+    const travelFee = parseFloat($("travel-fee").value) || 0;
+    const grandTotal = subtotal + travelFee;
+
+    $("subtotal").textContent = fmtGBP(subtotal);
+    $("grand-total").textContent = fmtGBP(grandTotal);
+
+    updateReceipt();
+  }
+
+  /* ==========================
+     PAID + RECEIPT
+  ========================== */
+  function getPaidState() {
+    return {
+      status: (loadState()?.paid?.status) === true,
+      date: $("paid-date").value || "",
+      method: $("payment-method").value || "Bank Transfer",
+      ref: ($("payment-ref").value || "").trim()
+    };
+  }
+
+  function updatePaidUI() {
+    const paid = getPaidState().status;
+    const badge = $("paid-badge");
+    const stamp = $("paid-stamp");
+
+    if (paid) {
+      badge.textContent = "PAID";
+      badge.className = "font-bold text-emerald-700";
+      stamp.classList.add("show");
+    } else {
+      badge.textContent = "UNPAID";
+      badge.className = "font-bold text-red-600";
+      stamp.classList.remove("show");
+    }
+  }
+
+  function togglePaid(makePaid) {
+    if (makePaid) {
+      if (!$("paid-date").value) $("paid-date").value = new Date().toISOString().split("T")[0];
     }
 
-    const safeName = name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_\-]/g, '');
+    const state = loadState() || {};
+    state.paid = state.paid || {};
+    state.paid.status = !!makePaid;
+    state.paid.date = $("paid-date").value || "";
+    state.paid.method = $("payment-method").value || "Bank Transfer";
+    state.paid.ref = ($("payment-ref").value || "").trim();
 
-    document.title = `${safeName}${datePart}`;
-}
+    saveState(state);
+    updatePaidUI();
+    updateReceipt();
 
-/* On Load */
-window.onload = () => {
-    const today = new Date().toISOString().split("T")[0];
-    document.getElementById("due-date").value = today;
+    // Auto-open email draft if paid + email exists
+    if (makePaid) {
+      const email = ($("client-email").value || "").trim();
+      if (email) {
+        sendReceiptEmail(true);
+      } else {
+        toast("Marked as paid. Add client email to auto-send the receipt.");
+      }
+    }
+  }
 
-    document.getElementById("invoice-date").textContent =
-        new Date().toLocaleDateString("en-GB", { year: "numeric", month: "long", day: "numeric" });
+  function getInvoiceData() {
+    const items = [];
+    document.querySelectorAll(".item-row").forEach(row => {
+      const sel = row.querySelector(".lesson-select");
+      const desc = sel ? sel.value : "Item";
+      const qty = parseFloat(row.querySelector(".item-qty").value) || 0;
+      const unit = parseFloat(row.querySelector(".item-price").value) || 0;
+      const date = row.querySelector(".lesson-date")?.value || "";
+      const time = row.querySelector(".lesson-time")?.value || "";
+      items.push({ desc, qty, unit, date, time, amount: qty * unit });
+    });
 
-    document.getElementById("invoice-number").value =
-        "EW-" + Math.floor(10000 + Math.random() * 90000);
+    const travelFee = parseFloat($("travel-fee").value) || 0;
+    const subtotal = items.reduce((a, b) => a + (b.amount || 0), 0);
+    const total = subtotal + travelFee;
 
-    populateBlockLessonTypes();
-    updateBlockPreview();
+    return {
+      clientName: ($("client-name").value || "").trim(),
+      clientAddress: ($("client-address").value || "").trim(),
+      clientEmail: ($("client-email").value || "").trim(),
+      invoiceNo: ($("invoice-number").value || "").trim(),
+      dueDate: ($("due-date").value || "").trim(),
+      notes: ($("invoice-notes").value || "").trim(),
+      travelFee,
+      subtotal,
+      total,
+      items
+    };
+  }
 
-    addItem();
-};
+  function updateReceipt() {
+    const data = getInvoiceData();
+    const paid = getPaidState();
+
+    $("r-client-name").textContent = data.clientName || "—";
+    $("r-client-address").textContent = data.clientAddress || "—";
+    $("r-client-email").textContent = data.clientEmail || "—";
+
+    $("r-invoice-no").textContent = data.invoiceNo || "—";
+    $("r-receipt-no").textContent = data.invoiceNo ? (data.invoiceNo + "-R") : "—";
+    $("r-paid-date").textContent = paid.date ? new Date(paid.date).toLocaleDateString("en-GB") : "—";
+    $("r-method").textContent = paid.method || "—";
+    $("r-ref").textContent = paid.ref || "—";
+
+    const rList = $("r-item-list");
+    rList.innerHTML = "";
+
+    data.items.forEach(it => {
+      const when = (it.date || it.time)
+        ? `<div class="text-xs text-gray-600">${[it.date ? new Date(it.date).toLocaleDateString("en-GB") : "", it.time || ""].filter(Boolean).join(" • ")}</div>`
+        : "";
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="px-6 py-3 text-sm text-gray-900">
+          <div class="font-semibold">${escapeHtml(it.desc || "Item")}</div>
+          ${when}
+        </td>
+        <td class="px-6 py-3 text-right text-sm text-gray-700">${Number(it.qty || 0)}</td>
+        <td class="px-6 py-3 text-right text-sm text-gray-700">${Number(it.unit || 0).toFixed(2)}</td>
+        <td class="px-6 py-3 text-right text-sm font-medium text-gray-900">${Number(it.amount || 0).toFixed(2)}</td>
+      `;
+      rList.appendChild(tr);
+    });
+
+    if (data.travelFee !== 0) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="px-6 py-3 text-sm text-gray-900 font-semibold">Travel Fee</td>
+        <td class="px-6 py-3 text-right text-sm text-gray-700">1</td>
+        <td class="px-6 py-3 text-right text-sm text-gray-700">${Number(data.travelFee).toFixed(2)}</td>
+        <td class="px-6 py-3 text-right text-sm font-medium text-gray-900">${Number(data.travelFee).toFixed(2)}</td>
+      `;
+      rList.appendChild(tr);
+    }
+
+    $("r-total").textContent = fmtGBP(data.total);
+  }
+
+  function buildReceiptEmailBody() {
+    const data = getInvoiceData();
+    const paid = getPaidState();
+
+    const lines = [];
+    lines.push("Receipt / Payment Confirmation");
+    lines.push("");
+    lines.push(`Invoice No: ${data.invoiceNo || "—"}`);
+    lines.push(`Receipt No: ${data.invoiceNo ? data.invoiceNo + "-R" : "—"}`);
+    lines.push(`Paid Date: ${paid.date ? new Date(paid.date).toLocaleDateString("en-GB") : "—"}`);
+    lines.push(`Payment Method: ${paid.method || "—"}`);
+    if (paid.ref) lines.push(`Reference: ${paid.ref}`);
+    lines.push("");
+    lines.push(`Billed To: ${data.clientName || "—"}`);
+    if (data.clientAddress) lines.push(data.clientAddress);
+    lines.push("");
+    lines.push("Items:");
+    data.items.forEach(it => {
+      const when = (it.date || it.time) ? ` (${[it.date ? new Date(it.date).toLocaleDateString("en-GB") : "", it.time || ""].filter(Boolean).join(" ")})` : "";
+      lines.push(`- ${it.desc}${when} — ${it.qty} × £${Number(it.unit).toFixed(2)} = £${Number(it.amount).toFixed(2)}`);
+    });
+    if (data.travelFee !== 0) lines.push(`- Travel Fee — £${Number(data.travelFee).toFixed(2)}`);
+    lines.push("");
+    lines.push(`TOTAL PAID: £${Number(data.total).toFixed(2)}`);
+    lines.push("");
+    lines.push("Thank you,");
+    lines.push("Elliot's Mobile Music");
+    return lines.join("\n");
+  }
+
+  function sendReceiptEmail(isAuto) {
+    const paid = getPaidState();
+    if (!paid.status) {
+      alert("Mark the invoice as paid first (so the receipt includes the paid date).");
+      return;
+    }
+
+    const email = ($("client-email").value || "").trim();
+    if (!email) {
+      alert("Add the client's email address first.");
+      return;
+    }
+
+    const data = getInvoiceData();
+    const subject = `Receipt - ${data.invoiceNo || "Invoice"} - Paid`;
+    const body = buildReceiptEmailBody();
+    const mailto = `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+    // Opens pre-filled email draft (user presses send)
+    window.location.href = mailto;
+
+    if (!isAuto) toast("Email draft opened — press Send.");
+  }
+
+  /* ==========================
+     PRINTING
+  ========================== */
+  function setDynamicFilename(prefix) {
+    const name = ($("client-name").value || "Client").trim();
+    const inv = ($("invoice-number").value || "Invoice").trim();
+
+    const dates = Array.from(document.querySelectorAll(".lesson-date"))
+      .map(d => d.value).filter(Boolean).sort();
+
+    let datePart = "";
+    if (dates.length > 0) datePart = `_${dates[0]}_to_${dates[dates.length - 1]}`;
+
+    const safeName = name.replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_\-]/g, "");
+    const safeInv = inv.replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_\-]/g, "");
+
+    document.title = `${prefix}_${safeInv}_${safeName}${datePart}`;
+  }
+
+  function printInvoice() {
+    updateReceipt();
+    updatePaidUI();
+    document.body.dataset.printMode = "invoice";
+    setDynamicFilename("INVOICE");
+    window.print();
+    setTimeout(() => { document.body.dataset.printMode = "invoice"; }, 200);
+  }
+
+  function printReceipt() {
+    if (!getPaidState().status) {
+      alert("Mark as paid first, then print the receipt.");
+      return;
+    }
+    updateReceipt();
+    document.body.dataset.printMode = "receipt";
+    setDynamicFilename("RECEIPT");
+    window.print();
+    setTimeout(() => { document.body.dataset.printMode = "invoice"; }, 200);
+  }
+
+  /* ==========================
+     AUTOSAVE
+  ========================== */
+  function autosaveSoon() {
+    clearTimeout(autosaveTimer);
+    autosaveTimer = setTimeout(saveToStorage, 200);
+  }
+
+  function saveToStorage() {
+    const data = {
+      form: {
+        clientName: $("client-name").value || "",
+        clientAddress: $("client-address").value || "",
+        clientEmail: $("client-email").value || "",
+        invoiceNo: $("invoice-number").value || "",
+        dueDate: $("due-date").value || "",
+        notes: $("invoice-notes").value || "",
+        travelFee: $("travel-fee").value || "0.00",
+        paidDate: $("paid-date").value || "",
+        method: $("payment-method").value || "Bank Transfer",
+        ref: $("payment-ref").value || ""
+      },
+      items: Array.from(document.querySelectorAll(".item-row")).map(row => ({
+        desc: row.querySelector(".lesson-select")?.value || "",
+        qty: row.querySelector(".item-qty")?.value || "1",
+        price: row.querySelector(".item-price")?.value || "0.00",
+        date: row.querySelector(".lesson-date")?.value || "",
+        time: row.querySelector(".lesson-time")?.value || ""
+      })),
+      paid: {
+        status: (loadState()?.paid?.status) === true,
+        date: $("paid-date").value || "",
+        method: $("payment-method").value || "Bank Transfer",
+        ref: ($("payment-ref").value || "").trim()
+      },
+      savedAt: Date.now()
+    };
+
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) {}
+    updateReceipt();
+    updatePaidUI();
+  }
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function saveState(stateObj) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(stateObj)); } catch (e) {}
+  }
+
+  function restoreFromStorage() {
+    const state = loadState();
+    if (!state) return false;
+
+    const f = state.form || {};
+    $("client-name").value = f.clientName || "";
+    $("client-address").value = f.clientAddress || "";
+    $("client-email").value = f.clientEmail || "";
+    if (f.invoiceNo) $("invoice-number").value = f.invoiceNo;
+    if (f.dueDate) $("due-date").value = f.dueDate;
+    $("invoice-notes").value = f.notes || "";
+    $("travel-fee").value = f.travelFee || "0.00";
+    $("paid-date").value = f.paidDate || "";
+    $("payment-method").value = f.method || "Bank Transfer";
+    $("payment-ref").value = f.ref || "";
+
+    // Items
+    $("item-list").innerHTML = "";
+    if (Array.isArray(state.items) && state.items.length) {
+      state.items.forEach(it => addItem(it.desc || "Standard Lesson (60 Mins)", it.date || "", it.time || "", it.qty || 1, it.price));
+    } else {
+      addItem();
+    }
+
+    // Paid status
+    const paidStatus = state?.paid?.status === true;
+    const s2 = loadState() || state;
+    s2.paid = s2.paid || {};
+    s2.paid.status = paidStatus;
+    saveState(s2);
+
+    calculateTotal();
+    updatePaidUI();
+    updateReceipt();
+    return true;
+  }
+
+  function clearDraft() {
+    if (!confirm("Start a new invoice and clear the saved draft?")) return;
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+    location.reload();
+  }
+
+  /* ==========================
+     INIT + WIRES
+  ========================== */
+  function wireAutosaveInputs() {
+    const ids = [
+      "client-name","client-address","client-email","invoice-number",
+      "due-date","invoice-notes","travel-fee","paid-date","payment-method","payment-ref"
+    ];
+    ids.forEach(id => {
+      const el = $(id);
+      if (!el) return;
+      el.addEventListener("input", () => { calculateTotal(); autosaveSoon(); });
+      el.addEventListener("change", () => { calculateTotal(); autosaveSoon(); });
+    });
+  }
+
+  function wireMenuButtons() {
+    $("add-lesson-btn").addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleAddMenu();
+    });
+
+    $("add-menu").addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-add]");
+      if (!btn) return;
+      const action = btn.dataset.add;
+
+      if (action === "single") addItem();
+      if (action === "band-session") addItem("School Band Programme (Per session, per child)");
+      if (action === "band-term-balance") addItem("School Band Programme (Term block – 6 weeks, per child) — balance after £10 deposit");
+      if (action === "band-term-full") addItem("School Band Programme (Term block – 6 weeks, per child) — full price (£90)");
+      if (action === "stripe-credit") addItem("Stripe deposit already paid (credit)", "", "", 1, -STRIPE_DEPOSIT);
+
+      hideAddMenu();
+      calculateTotal();
+      autosaveSoon();
+    });
+
+    document.addEventListener("click", (e) => {
+      const menu = $("add-menu");
+      if (!menu.classList.contains("hidden")) hideAddMenu();
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") hideAddMenu();
+    });
+
+    $("block-start-date").addEventListener("change", updateBlockPreview);
+    $("block-weeks").addEventListener("input", updateBlockPreview);
+    $("block-create").addEventListener("click", generateBlock);
+    $("block-cancel").addEventListener("click", hideAddMenu);
+  }
+
+  function wirePaidButtons() {
+    $("mark-paid-btn").addEventListener("click", () => togglePaid(true));
+    $("mark-unpaid-btn").addEventListener("click", () => togglePaid(false));
+    $("email-receipt-btn").addEventListener("click", () => sendReceiptEmail(false));
+    $("print-receipt-btn").addEventListener("click", printReceipt);
+    $("new-invoice-btn").addEventListener("click", clearDraft);
+  }
+
+  function wirePrintButtons() {
+    $("print-invoice-btn").addEventListener("click", printInvoice);
+  }
+
+  window.addEventListener("load", () => {
+    // Date + Invoice number defaults
+    const todayISO = new Date().toISOString().split("T")[0];
+    $("invoice-date").textContent = new Date().toLocaleDateString("en-GB", { year: "numeric", month: "long", day: "numeric" });
+
+    if (!$("due-date").value) $("due-date").value = todayISO;
+
+    // Set invoice number ONLY if empty OR no saved draft loaded
+    const restored = restoreFromStorage();
+    if (!restored) {
+      $("invoice-number").value = "EW-" + Math.floor(10000 + Math.random() * 90000);
+      populateBlockLessonTypes();
+      updateBlockPreview();
+      addItem();
+      calculateTotal();
+      updatePaidUI();
+      updateReceipt();
+      autosaveSoon();
+    } else {
+      populateBlockLessonTypes();
+      updateBlockPreview();
+    }
+
+    wireAutosaveInputs();
+    wireMenuButtons();
+    wirePaidButtons();
+    wirePrintButtons();
+
+    // If user changes paid fields, keep UI synced
+    ["paid-date","payment-method","payment-ref"].forEach(id => {
+      const el = $(id);
+      el.addEventListener("input", () => { updateReceipt(); autosaveSoon(); });
+      el.addEventListener("change", () => { updateReceipt(); autosaveSoon(); });
+    });
+  });
 </script>
 </body>
 </html>

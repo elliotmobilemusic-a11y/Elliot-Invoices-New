@@ -1,0 +1,13 @@
+name = "elliots-invoice-app"
+main = "src/index.js"
+compatibility_date = "2026-01-02"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "emm_invoices"
+database_id = "5c6e1036-a0d6-47f4-8ca4-b4c0fafcceea"

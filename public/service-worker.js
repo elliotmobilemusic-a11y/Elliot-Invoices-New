@@ -1,23 +1,20 @@
-// Basic PWA Service Worker
+// public/service-worker.js
 self.addEventListener("install", (event) => {
   self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(clients.claim());
+  event.waitUntil(self.clients.claim());
 });
 
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
-  // ✅ Never intercept API requests
-  if (url.pathname.startsWith("/api/")) {
-    event.respondWith(fetch(event.request));
-    return;
-  }
+  // Never intercept API calls
+  if (url.pathname.startsWith("/api/")) return;
 
-  // Network-first so the app stays usable
+  // Default: network first
   event.respondWith(
-    fetch(event.request).catch(() => new Response("You are offline. Please reconnect."))
+    fetch(event.request).catch(() => caches.match(event.request))
   );
 });

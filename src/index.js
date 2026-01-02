@@ -12,6 +12,104 @@ export default {
       return handleApi(request, env, ctx, url);
     }
 
+function csvEscape(value) {
+  if (value === null || value === undefined) return "";
+  const s = String(value);
+  // Wrap in quotes if it contains comma, quote, or newline
+  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+async function exportTableCsv(env, table) {
+  // Only allow known tables (prevents SQL injection)
+  const allowed = new Set(["invoices", "customers"]);
+  if (!allowed.has(table)) {
+    return new Response("Not found", { status: 404 });
+  }
+
+  // Get columns (robust even if your schema changes)
+  const cols = await env.DB.prepare(`PRAGMA table_info(${table})`).all();
+  const colNames = (cols.results || []).map((r) => r.name);
+
+  if (!colNames.length) {
+    return new Response("No columns found", { status: 500 });
+  }
+
+  // Order nicely if there’s a date column
+  const orderBy = colNames.includes("issued_at")
+    ? "ORDER BY issued_at DESC"
+    : colNames.includes("created_at")
+      ? "ORDER BY created_at DESC"
+      : "";
+
+  const selectCols = colNames.map((c) => `"${c}"`).join(", ");
+  const rows = await env.DB.prepare(`SELECT ${selectCols} FROM ${table} ${orderBy}`).all();
+
+  // Build CSV (with BOM so Excel opens it cleanly)
+  const header = colNames.map(csvEscape).join(",");
+  const lines = (rows.results || []).map((row) =>
+    colNames.map((c) => csvEscape(row[c])).join(",")
+  );
+
+  const csv = "\ufeff" + [header, ...lines].join("\n"); // BOM + CSV
+
+  const date = new Date().toISOString().slice(0, 10);
+  return new Response(csv, {
+    headers: {
+      "content-type": "text/csv; charset=utf-8",
+      "content-disposition": `attachment; filename="${table}-${date}.csv"`,
+      "cache-control": "no-store",
+    },
+  });
+}
+
+async function exportBackupJson(env) {
+  const [customers, invoices] = await Promise.all([
+    env.DB.prepare("SELECT * FROM customers").all(),
+    env.DB.prepare("SELECT * FROM invoices").all(),
+  ]);
+
+  const payload = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    customers: customers.results || [],
+    invoices: invoices.results || [],
+  };
+
+  const date = new Date().toISOString().slice(0, 10);
+  return new Response(JSON.stringify(payload, null, 2), {
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+      "content-disposition": `attachment; filename="emm-backup-${date}.json"`,
+      "cache-control": "no-store",
+    },
+  });
+}
+
+// In your existing fetch handler:
+export default {
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
+
+    // ✅ Add these BEFORE assets fallback
+    if (url.pathname === "/api/export/invoices.csv") {
+      return exportTableCsv(env, "invoices");
+    }
+    if (url.pathname === "/api/export/customers.csv") {
+      return exportTableCsv(env, "customers");
+    }
+    if (url.pathname === "/api/export/backup.json") {
+      return exportBackupJson(env);
+    }
+
+    // ...your existing routes...
+
+    // ✅ your existing assets fallback (keep it last)
+    return env.ASSETS.fetch(request);
+  },
+};
+
+    
     // Static assets fallback
     if (env.ASSETS?.fetch) return env.ASSETS.fetch(request);
     return new Response("Not found", { status: 404 });

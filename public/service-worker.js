@@ -1,30 +1,23 @@
-// --- Basic PWA Service Worker ---
-// Makes your website installable & app-like
-
-self.addEventListener("install", event => {
+// Basic PWA Service Worker
+self.addEventListener("install", (event) => {
   self.skipWaiting();
 });
 
-self.addEventListener("activate", event => {
+self.addEventListener("activate", (event) => {
   event.waitUntil(clients.claim());
 });
 
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
-  // ✅ Always bypass the service worker for API requests
+  // ✅ Never intercept API requests
   if (url.pathname.startsWith("/api/")) {
+    event.respondWith(fetch(event.request));
     return;
   }
 
-  // ...your existing service worker logic below...
-});
-
-// Network-first fetch so the app works offline
-self.addEventListener("fetch", event => {
+  // Network-first so the app stays usable
   event.respondWith(
-    fetch(event.request).catch(() =>
-      new Response("You are offline. Please reconnect.")
-    )
+    fetch(event.request).catch(() => new Response("You are offline. Please reconnect."))
   );
 });

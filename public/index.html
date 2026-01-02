@@ -14,10 +14,24 @@
   <meta name="theme-color" content="#4f46e5" />
 
   <style>
-    /* (Same layout + mobile polish like your current file) */
+    /* ---------- Screen view toggle (Invoice vs Receipt) ---------- */
+    body[data-view-mode="invoice"] #invoice-document { display: block; }
+    body[data-view-mode="invoice"] #receipt-document { display: none; }
+    body[data-view-mode="receipt"] #invoice-document { display: none; }
+    body[data-view-mode="receipt"] #receipt-document { display: block; }
+
+    /* ---------- Mobile polish ---------- */
     @media (max-width: 768px) {
       body { padding: 0; margin: 0; background: #ffffff; }
-      .invoice-container { width: 100%; max-width: 100% !important; margin: 0 !important; border-radius: 0 !important; padding: 1rem !important; box-shadow: none !important; border: none !important; }
+      .invoice-container {
+        width: 100%;
+        max-width: 100% !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+        padding: 1rem !important;
+        box-shadow: none !important;
+        border: none !important;
+      }
       header { flex-direction: column; text-align: center; gap: 1rem; }
       .grid-cols-2 { grid-template-columns: 1fr !important; }
       table { display: block; width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border-spacing: 0; }
@@ -31,9 +45,10 @@
     @media (max-width: 430px) {
       h1, h2, h3 { font-size: 90%; }
       input, select, textarea { font-size: 14px !important; }
-      #invoice-number { width: 110px !important; }
+      #invoice-number { width: 130px !important; }
     }
 
+    /* ---------- Print ---------- */
     @media print {
       body { background: white; font-size: 10pt; }
       .no-print { display: none !important; }
@@ -48,6 +63,7 @@
     }
 
     body { font-family: "Inter", sans-serif; background-color: #f7f9fb; }
+
     .invoice-container {
       max-width: 900px;
       margin: 2rem auto;
@@ -93,10 +109,26 @@
       max-width: calc(100% - 24px);
     }
     .toast.show { display: block; }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      border: 1px solid #e5e7eb;
+      background: #fafafa;
+      color: #111827;
+    }
+
+    .subtle-divider {
+      border-top: 1px solid #eef2ff;
+    }
   </style>
 </head>
 
-<body data-print-mode="invoice">
+<body data-view-mode="invoice" data-print-mode="invoice">
   <div id="toast" class="toast"></div>
 
   <!-- =======================
@@ -108,7 +140,10 @@
     <!-- Header -->
     <header class="flex justify-between items-center pb-6 border-b border-indigo-200">
       <div>
-        <h1 class="text-3xl font-extrabold text-indigo-700">INVOICE</h1>
+        <div class="flex flex-wrap items-center gap-2">
+          <h1 class="text-3xl font-extrabold text-indigo-700">INVOICE</h1>
+          <span id="status-chip" class="chip">Status: Draft</span>
+        </div>
         <div class="mt-2 flex items-center space-x-2 text-sm text-gray-500">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -125,30 +160,75 @@
       </div>
     </header>
 
-    <!-- Cloud controls -->
-    <section class="no-print pt-6 pb-4 border-b border-gray-100 flex flex-col md:flex-row md:items-end gap-3 md:justify-between">
-      <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-        <button id="btn-save-cloud" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-          Save to Cloud
-        </button>
-        <button id="btn-refresh" class="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg hover:bg-gray-200">
-          Refresh Lists
-        </button>
-      </div>
+    <!-- Top Controls -->
+    <section class="no-print pt-6 pb-4 border-b border-gray-100">
+      <div class="flex flex-col gap-3">
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full md:w-[520px]">
-        <div>
-          <label class="text-xs text-gray-600">Load Customer</label>
-          <select id="customer-picker" class="w-full p-2 border border-gray-300 rounded-lg">
-            <option value="">—</option>
-          </select>
+        <!-- Row 1: Primary actions -->
+        <div class="flex flex-col md:flex-row md:items-center gap-2 md:justify-between">
+          <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+            <button id="btn-save-cloud" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+              Save to Cloud
+            </button>
+            <button id="btn-refresh" class="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg hover:bg-gray-200">
+              Refresh Lists
+            </button>
+            <button id="btn-new-invoice" class="px-4 py-2 bg-white text-gray-900 rounded-lg hover:bg-gray-50 border border-gray-200">
+              New Invoice
+            </button>
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+            <button id="btn-view-invoice" class="px-4 py-2 bg-indigo-50 text-indigo-800 rounded-lg hover:bg-indigo-100 border border-indigo-100">
+              View Invoice
+            </button>
+            <button id="btn-view-receipt" class="px-4 py-2 bg-emerald-50 text-emerald-800 rounded-lg hover:bg-emerald-100 border border-emerald-100">
+              View Receipt
+            </button>
+          </div>
         </div>
-        <div>
-          <label class="text-xs text-gray-600">Load Invoice</label>
-          <select id="invoice-picker" class="w-full p-2 border border-gray-300 rounded-lg">
-            <option value="">—</option>
-          </select>
+
+        <!-- Row 2: Loaders -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full">
+          <div>
+            <label class="text-xs text-gray-600">Load Customer</label>
+            <select id="customer-picker" class="w-full p-2 border border-gray-300 rounded-lg">
+              <option value="">—</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs text-gray-600">Load Invoice</label>
+            <select id="invoice-picker" class="w-full p-2 border border-gray-300 rounded-lg">
+              <option value="">—</option>
+            </select>
+          </div>
         </div>
+
+        <!-- Row 3: Backup/Export -->
+        <div class="subtle-divider pt-4">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+            <div class="text-sm font-semibold text-gray-800">Backup / Export</div>
+            <div class="text-xs text-gray-500">
+              Tip: “Print Invoice” → Save as PDF in your browser.
+            </div>
+          </div>
+
+          <div class="mt-2 flex flex-col sm:flex-row gap-2">
+            <button id="btn-export-invoices-csv" class="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg hover:bg-gray-200">
+              Export ALL Invoices (CSV)
+            </button>
+
+            <button id="btn-export-current-json" class="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg hover:bg-gray-200">
+              Export CURRENT Invoice (JSON)
+            </button>
+
+            <label class="px-4 py-2 bg-white text-gray-900 rounded-lg hover:bg-gray-50 border border-gray-200 cursor-pointer text-center">
+              Import Invoice (JSON)
+              <input id="import-json" type="file" accept="application/json" class="hidden" />
+            </label>
+          </div>
+        </div>
+
       </div>
     </section>
 
@@ -169,9 +249,12 @@
           </div>
         </div>
 
-        <div class="no-print">
+        <div class="no-print flex gap-2">
           <button id="btn-save-customer" class="px-3 py-2 bg-gray-100 text-gray-900 rounded-lg hover:bg-gray-200">
             Save Customer
+          </button>
+          <button id="btn-clear-customer" class="px-3 py-2 bg-white text-gray-900 rounded-lg hover:bg-gray-50 border border-gray-200">
+            Clear
           </button>
         </div>
       </div>
@@ -180,7 +263,7 @@
         <div class="flex flex-col items-end gap-2">
           <div class="w-full sm:w-auto">
             <h3 class="font-semibold text-gray-700 mb-2">INVOICE NO:</h3>
-            <input id="invoice-number" type="text" class="w-40 p-2 border border-gray-300 rounded-lg text-right" />
+            <input id="invoice-number" type="text" class="w-44 p-2 border border-gray-300 rounded-lg text-right" />
           </div>
 
           <div class="w-full sm:w-auto">
@@ -364,7 +447,10 @@
   <div class="invoice-container" id="receipt-document">
     <header class="flex justify-between items-center pb-6 border-b border-emerald-200">
       <div>
-        <h1 class="text-3xl font-extrabold text-emerald-700">RECEIPT</h1>
+        <div class="flex flex-wrap items-center gap-2">
+          <h1 class="text-3xl font-extrabold text-emerald-700">RECEIPT</h1>
+          <span class="chip">Payment confirmation</span>
+        </div>
         <p class="mt-2 text-sm text-gray-600">Payment confirmation for your records.</p>
       </div>
 
@@ -420,11 +506,20 @@
       <p class="mt-6 text-sm text-gray-700">
         Thank you — your payment has been received.
       </p>
+
+      <div class="no-print mt-6 flex flex-col sm:flex-row gap-2">
+        <button id="btn-receipt-back" class="px-4 py-2 bg-white text-gray-900 rounded-lg hover:bg-gray-50 border border-gray-200">
+          Back to Invoice
+        </button>
+        <button id="btn-print-receipt-2" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">
+          Print Receipt
+        </button>
+      </div>
     </section>
   </div>
 
   <script>
-    // Service worker (avoid caching /api)
+    // Service worker (avoid caching /api in your SW implementation)
     document.addEventListener("DOMContentLoaded", () => {
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker.register("service-worker.js").catch(() => {});
@@ -436,6 +531,7 @@
     ========================== */
     const BAND_TERM_FULL_PRICE = 90.00;   // 6 weeks term
     const STRIPE_DEPOSIT = 10.00;         // deposit paid via Stripe
+
     const LESSON_OPTIONS = {
       "Standard Lesson (30 Mins)": 15.00,
       "Standard Lesson (60 Mins)": 30.00,
@@ -444,7 +540,6 @@
       "Free Taster Session": 0.00,
       "Cancellation Fee (24 Hour Policy)": 0.00,
 
-      // School band (matches your programme docs)
       "School Band Programme (Per session, per child)": 15.00,
       "School Band Programme (Term block – 6 weeks, per child) — full price (£90)": BAND_TERM_FULL_PRICE,
 
@@ -452,9 +547,11 @@
     };
 
     const $ = (id) => document.getElementById(id);
-    const STORAGE_KEY = "emm_invoice_cloud_v1";
+
+    const STORAGE_KEY = "emm_invoice_cloud_v2";
     let autosaveTimer = null;
     let currentInvoiceId = null;
+    let lastLoadedInvoice = null; // keep last full invoice payload for receipt_no etc
 
     function fmtGBP(n) {
       const num = Number(n || 0);
@@ -474,6 +571,34 @@
       }[m]));
     }
 
+    function setStatusChip() {
+      const chip = $("status-chip");
+      const paid = $("paid-stamp").classList.contains("show");
+      if (paid) {
+        chip.textContent = "Status: Paid";
+        chip.style.borderColor = "#bbf7d0";
+        chip.style.background = "#ecfdf5";
+        chip.style.color = "#065f46";
+      } else if (currentInvoiceId) {
+        chip.textContent = "Status: Saved";
+        chip.style.borderColor = "#e5e7eb";
+        chip.style.background = "#fafafa";
+        chip.style.color = "#111827";
+      } else {
+        chip.textContent = "Status: Draft";
+        chip.style.borderColor = "#e5e7eb";
+        chip.style.background = "#fafafa";
+        chip.style.color = "#111827";
+      }
+    }
+
+    function setViewMode(mode) {
+      document.body.setAttribute("data-view-mode", mode);
+      if (mode === "receipt") {
+        populateReceiptDocument(lastLoadedInvoice);
+      }
+    }
+
     function showAddMenu() {
       $("add-menu").classList.remove("hidden");
       $("add-item-btn").setAttribute("aria-expanded", "true");
@@ -491,7 +616,6 @@
       const sel = $("block-lesson-type");
       sel.innerHTML = "";
       Object.keys(LESSON_OPTIONS).forEach((name) => {
-        // block generator is for lesson-type rows only; but keeping it broad is fine
         const opt = document.createElement("option");
         opt.value = name;
         opt.textContent = name;
@@ -502,8 +626,8 @@
     function updateBlockPreview() {
       const start = $("block-start-date").value;
       const weeks = parseInt($("block-weeks").value, 10) || 1;
-
       if (!start) { $("block-end-date").textContent = "—"; return; }
+
       const startDate = new Date(start);
       const lastDate = new Date(startDate);
       lastDate.setDate(startDate.getDate() + (weeks - 1) * 7);
@@ -515,7 +639,6 @@
       const time = $("block-start-time").value;
       const weeks = parseInt($("block-weeks").value, 10) || 1;
       const lessonType = $("block-lesson-type").value || "Standard Lesson (60 Mins)";
-
       if (!start) { alert("Please choose a start date for the block of lessons."); return; }
 
       const startDate = new Date(start);
@@ -531,8 +654,7 @@
     }
 
     function createLessonSelect(defaultOption) {
-      let html = '<select class="lesson-select w-full p-1 border border-gray-300 rounded-lg text-sm">';
-      html += '<option disabled>Select Lesson Type / Item</option>';
+      let html = '<select class="lesson-select w-full p-2 border border-gray-300 rounded-lg text-sm">';
       for (const [name, price] of Object.entries(LESSON_OPTIONS)) {
         const selected = (name === defaultOption) ? "selected" : "";
         html += `<option value="${escapeHtml(name)}" data-price="${price}" ${selected}>${escapeHtml(name)}</option>`;
@@ -553,24 +675,30 @@
         <td class="px-6 py-4 text-sm text-gray-900">
           ${createLessonSelect(defaultOption)}
           <div class="mt-2 text-xs text-gray-600">
-            <div class="flex items-center space-x-2">
-              <input type="date" class="lesson-date p-1 border border-gray-200 rounded text-xs" value="${dateValue}">
-              <input type="time" class="lesson-time p-1 border border-gray-200 rounded text-xs" value="${timeValue}">
+            <div class="flex flex-wrap items-center gap-2">
+              <div class="flex items-center gap-2">
+                <span class="text-[11px] text-gray-500">Date</span>
+                <input type="date" class="lesson-date p-2 border border-gray-200 rounded-lg text-xs" value="${dateValue}">
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-[11px] text-gray-500">Time</span>
+                <input type="time" class="lesson-time p-2 border border-gray-200 rounded-lg text-xs" value="${timeValue}">
+              </div>
             </div>
           </div>
         </td>
 
         <td class="px-6 py-4 text-right text-sm">
           <input type="number" value="${Number(qtyValue) || 1}" min="1"
-            class="item-qty w-16 p-1 text-right border-b border-gray-300">
+            class="item-qty w-16 p-2 text-right border border-gray-200 rounded-lg">
         </td>
 
         <td class="px-6 py-4 text-right text-sm">
           <input type="number" value="${Number(price).toFixed(2)}" min="-99999" step="0.01"
-            class="item-price w-20 p-1 text-right border-b border-gray-300">
+            class="item-price w-24 p-2 text-right border border-gray-200 rounded-lg">
         </td>
 
-        <td class="px-6 py-4 text-right text-sm font-medium total-amount">0.00</td>
+        <td class="px-6 py-4 text-right text-sm font-semibold total-amount">0.00</td>
 
         <td class="px-2 py-4 no-print">
           <button type="button" class="remove-row text-red-500 hover:text-red-700" aria-label="Remove item">✕</button>
@@ -591,7 +719,6 @@
         const p = Number(sel.selectedOptions[0].dataset.price || 0);
         priceEl.value = p.toFixed(2);
 
-        // Auto switch programme + deposit defaults if band item chosen
         if (label.startsWith("School Band Programme")) {
           $("programme").value = "school_band";
           syncProgrammeUI(true);
@@ -616,43 +743,6 @@
       autosaveSoon();
     }
 
-    function calculateTotal() {
-      let subtotal = 0;
-
-      document.querySelectorAll(".item-row").forEach(row => {
-        const qty = parseFloat(row.querySelector(".item-qty").value) || 0;
-        const price = parseFloat(row.querySelector(".item-price").value) || 0;
-
-        const total = qty * price;
-        row.querySelector(".total-amount").textContent = total.toFixed(2);
-        subtotal += total;
-      });
-
-      const travelFee = parseFloat($("travel-fee").value) || 0;
-      const totalPackage = subtotal + travelFee;
-
-      const programme = $("programme").value;
-      const deposit = programme === "school_band" ? (parseFloat($("deposit-amount").value) || 0) : 0;
-      const balanceDue = Math.max(0, totalPackage - deposit);
-
-      $("subtotal").textContent = fmtGBP(subtotal);
-
-      // If deposit used, show the package total and due total separately
-      if (programme === "school_band" && deposit > 0) {
-        $("total-before-wrap").classList.remove("hidden");
-        $("total-before").textContent = fmtGBP(totalPackage);
-      } else {
-        $("total-before-wrap").classList.add("hidden");
-      }
-
-      $("grand-total").textContent = fmtGBP(balanceDue);
-
-      // Keep receipt preview in sync if needed
-      if ($("paid-stamp").classList.contains("show")) {
-        populateReceiptDocument();
-      }
-    }
-
     function getItems() {
       const items = [];
       document.querySelectorAll(".item-row").forEach(row => {
@@ -674,7 +764,10 @@
       const total = subtotal + travel_fee;
 
       const programme = $("programme").value;
-      const deposit_amount = programme === "school_band" ? Number(parseFloat($("deposit-amount").value) || 0) : 0;
+      const deposit_amount = programme === "school_band"
+        ? Number(parseFloat($("deposit-amount").value) || 0)
+        : 0;
+
       return { subtotal, travel_fee, total, deposit_amount };
     }
 
@@ -689,7 +782,6 @@
 
     function getPaidPayload() {
       const dt = $("paid-datetime").value;
-      // Convert "yyyy-mm-ddThh:mm" to ISO if present (local time)
       const paid_at = dt ? new Date(dt).toISOString() : new Date().toISOString();
       return {
         paid_at,
@@ -698,11 +790,46 @@
       };
     }
 
+    function calculateTotal() {
+      let subtotal = 0;
+
+      document.querySelectorAll(".item-row").forEach(row => {
+        const qty = parseFloat(row.querySelector(".item-qty").value) || 0;
+        const price = parseFloat(row.querySelector(".item-price").value) || 0;
+        const total = qty * price;
+
+        row.querySelector(".total-amount").textContent = total.toFixed(2);
+        subtotal += total;
+      });
+
+      const travelFee = parseFloat($("travel-fee").value) || 0;
+      const totalPackage = subtotal + travelFee;
+
+      const programme = $("programme").value;
+      const deposit = programme === "school_band" ? (parseFloat($("deposit-amount").value) || 0) : 0;
+      const balanceDue = Math.max(0, totalPackage - deposit);
+
+      $("subtotal").textContent = fmtGBP(subtotal);
+
+      if (programme === "school_band" && deposit > 0) {
+        $("total-before-wrap").classList.remove("hidden");
+        $("total-before").textContent = fmtGBP(totalPackage);
+      } else {
+        $("total-before-wrap").classList.add("hidden");
+      }
+
+      $("grand-total").textContent = fmtGBP(balanceDue);
+
+      if (document.body.getAttribute("data-view-mode") === "receipt") {
+        populateReceiptDocument(lastLoadedInvoice);
+      }
+    }
+
     function syncProgrammeUI(userChanged = false) {
       const programme = $("programme").value;
       if (programme === "school_band") {
         $("deposit-wrap").classList.remove("hidden");
-        if (userChanged && (!$("deposit-amount").value || Number($("deposit-amount").value) === 0)) {
+        if (userChanged && (!($("deposit-amount").value) || Number($("deposit-amount").value) === 0)) {
           $("deposit-amount").value = STRIPE_DEPOSIT.toFixed(2);
         }
       } else {
@@ -717,9 +844,11 @@
         ...opts,
         headers: { "Content-Type": "application/json", ...(opts.headers || {}) }
       });
+
       const text = await res.text();
       let data = null;
       try { data = JSON.parse(text); } catch { data = { ok: false, raw: text }; }
+
       if (!res.ok || !data.ok) {
         const msg = data?.error || data?.message || `Request failed (${res.status})`;
         throw new Error(msg);
@@ -728,40 +857,39 @@
     }
 
     async function refreshLists() {
-      const c = await api("/api/customers?limit=50");
       const customerPicker = $("customer-picker");
-      customerPicker.innerHTML = '<option value="">—</option>';
-      c.customers.forEach(x => {
-        const opt = document.createElement("option");
-        opt.value = String(x.id);
-        opt.textContent = `${x.name}${x.email ? " — " + x.email : ""}`;
-        opt.dataset.email = x.email || "";
-        opt.dataset.address = x.address || "";
-        customerPicker.appendChild(opt);
-      });
-
-      const inv = await api("/api/invoices?limit=50");
       const invoicePicker = $("invoice-picker");
+      customerPicker.innerHTML = '<option value="">—</option>';
       invoicePicker.innerHTML = '<option value="">—</option>';
-      inv.invoices.forEach(x => {
-        const opt = document.createElement("option");
-        opt.value = String(x.id);
-        const paid = x.paid_at ? "✅" : "—";
-        opt.textContent = `${paid} ${x.invoice_no} — ${x.customer_name || ""} — ${fmtGBP(x.total)}${x.deposit_amount ? " (dep " + fmtGBP(x.deposit_amount) + ")" : ""}`;
-        invoicePicker.appendChild(opt);
-      });
+
+      try {
+        const c = await api("/api/customers?limit=100");
+        c.customers.forEach(x => {
+          const opt = document.createElement("option");
+          opt.value = String(x.id);
+          opt.textContent = `${x.name}${x.email ? " — " + x.email : ""}`;
+          opt.dataset.email = x.email || "";
+          opt.dataset.address = x.address || "";
+          customerPicker.appendChild(opt);
+        });
+      } catch (e) {
+        toast("Customers list failed (check /api/customers)");
+      }
+
+      try {
+        const inv = await api("/api/invoices?limit=100");
+        inv.invoices.forEach(x => {
+          const opt = document.createElement("option");
+          opt.value = String(x.id);
+          const paid = x.paid_at ? "✅" : "—";
+          opt.textContent = `${paid} ${x.invoice_no} — ${x.customer_name || ""} — ${fmtGBP(x.total)}${x.deposit_amount ? " (dep " + fmtGBP(x.deposit_amount) + ")" : ""}`;
+          invoicePicker.appendChild(opt);
+        });
+      } catch (e) {
+        toast("Invoices list failed (check /api/invoices)");
+      }
 
       toast("Lists refreshed");
-    }
-
-    async function saveCustomerToCloud() {
-      // Customer is saved when invoice is saved; this button is just a convenience
-      const customer = getCustomer();
-      if (!customer.name) { alert("Customer name is required"); return; }
-      // Save a tiny “draft invoice” to upsert customer cleanly
-      await saveInvoiceToCloud(true);
-      toast("Customer saved");
-      await refreshLists();
     }
 
     async function saveInvoiceToCloud(silent = false) {
@@ -772,7 +900,6 @@
       if (!invoice_no) { alert("Invoice number is required"); return; }
 
       const programme = $("programme").value;
-
       const items = getItems();
       const { subtotal, travel_fee, total, deposit_amount } = getTotals();
 
@@ -793,13 +920,23 @@
       currentInvoiceId = data.id;
       localStorage.setItem("emm_current_invoice_id", String(currentInvoiceId || ""));
       if (!silent) toast("Saved to cloud");
+      setStatusChip();
       return data;
+    }
+
+    async function saveCustomerToCloud() {
+      const customer = getCustomer();
+      if (!customer.name) { alert("Customer name is required"); return; }
+      await saveInvoiceToCloud(true);
+      toast("Customer saved");
+      await refreshLists();
     }
 
     async function loadInvoiceFromCloud(id) {
       const data = await api(`/api/invoices/${id}`);
       const inv = data.invoice;
 
+      lastLoadedInvoice = inv;
       currentInvoiceId = inv.id;
       localStorage.setItem("emm_current_invoice_id", String(inv.id));
 
@@ -815,39 +952,38 @@
 
       $("travel-fee").value = Number(inv.travel_fee || 0).toFixed(2);
       $("deposit-amount").value = Number(inv.deposit_amount || 0).toFixed(2);
-
       $("notes").value = inv.notes || "";
 
-      // items
       $("item-list").innerHTML = "";
       (inv.items || []).forEach(it => {
         addItem(it.desc || "Standard Lesson (60 Mins)", it.date || "", it.time || "", it.qty || 1, it.unit);
       });
       if ((inv.items || []).length === 0) addItem();
 
-      // Paid state
       const isPaid = !!inv.paid_at;
       $("paid-stamp").classList.toggle("show", isPaid);
 
       if (isPaid) {
-        // populate paid fields
         const d = new Date(inv.paid_at);
-        // Set datetime-local value (local)
         const pad = (n) => String(n).padStart(2, "0");
         const localValue = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
         $("paid-datetime").value = localValue;
         $("paid-method").value = inv.paid_method || "Bank Transfer";
         $("paid-ref").value = inv.paid_ref || "";
+      } else {
+        $("paid-datetime").value = "";
+        $("paid-method").value = "Bank Transfer";
+        $("paid-ref").value = "";
       }
 
       calculateTotal();
       populateReceiptDocument(inv);
+      setStatusChip();
 
       toast("Invoice loaded");
     }
 
     function populateReceiptDocument(dbInvoice = null) {
-      // Use UI values (or dbInvoice when available)
       const customer = getCustomer();
       const items = getItems();
       const { travel_fee, total, deposit_amount } = getTotals();
@@ -860,11 +996,9 @@
       const invNo = ($("invoice-number").value || "").trim();
       $("r-invoice-no").textContent = invNo || "—";
 
-      // Receipt number if DB already has one
       const receiptNo = dbInvoice?.receipt_no || (invNo ? `RCPT-${invNo}` : "—");
       $("r-receipt-no").textContent = receiptNo || "—";
 
-      // Paid info from DB if present
       const paidAt = dbInvoice?.paid_at || null;
       const paidMethod = dbInvoice?.paid_method || $("paid-method").value || "—";
       const paidRef = dbInvoice?.paid_ref || ($("paid-ref").value || "—");
@@ -873,14 +1007,17 @@
       $("r-method").textContent = paidMethod || "—";
       $("r-ref").textContent = paidRef || "—";
 
-      // Receipt items
       const rList = $("r-item-list");
       rList.innerHTML = "";
 
       items.forEach(it => {
+        const when = (it.date || it.time)
+          ? ` <span class="text-xs text-gray-500">(${escapeHtml(it.date||"")}${it.time ? " " + escapeHtml(it.time) : ""})</span>`
+          : "";
+
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td class="px-6 py-3 text-sm text-gray-900">${escapeHtml(it.desc)}${(it.date||it.time) ? ` <span class="text-xs text-gray-500">(${escapeHtml(it.date||"")}${it.time ? " " + escapeHtml(it.time) : ""})</span>` : ""}</td>
+          <td class="px-6 py-3 text-sm text-gray-900">${escapeHtml(it.desc)}${when}</td>
           <td class="px-6 py-3 text-right text-sm text-gray-700">${Number(it.qty||0)}</td>
           <td class="px-6 py-3 text-right text-sm text-gray-700">${Number(it.unit||0).toFixed(2)}</td>
           <td class="px-6 py-3 text-right text-sm font-medium text-gray-900">${Number(it.amount||0).toFixed(2)}</td>
@@ -899,27 +1036,25 @@
         rList.appendChild(tr);
       }
 
-      // Breakdown
       const breakdown = $("r-breakdown");
       breakdown.innerHTML = "";
-      const balanceDue = Math.max(0, total - deposit_amount);
 
       if (programme === "school_band" && deposit_amount > 0) {
+        const balanceDue = Math.max(0, total - deposit_amount);
         breakdown.innerHTML = `
           <div class="flex justify-between"><span>Total (package):</span><span class="font-semibold">${fmtGBP(total)}</span></div>
           <div class="flex justify-between"><span>Stripe deposit already paid:</span><span class="font-semibold">${fmtGBP(deposit_amount)}</span></div>
           <div class="flex justify-between"><span class="font-bold">Payment received today:</span><span class="font-bold text-emerald-700">${fmtGBP(balanceDue)}</span></div>
         `;
-        $("r-total").textContent = fmtGBP(total); // total paid to date
+        $("r-total").textContent = fmtGBP(total);
       } else {
-        breakdown.innerHTML = "";
         $("r-total").textContent = fmtGBP(total);
       }
     }
 
     function autosaveSoon() {
       clearTimeout(autosaveTimer);
-      autosaveTimer = setTimeout(saveDraft, 600);
+      autosaveTimer = setTimeout(saveDraft, 650);
     }
 
     function saveDraft() {
@@ -932,7 +1067,12 @@
         travel_fee: $("travel-fee").value,
         deposit_amount: $("deposit-amount").value,
         notes: $("notes").value,
-        items: getItems()
+        items: getItems(),
+        paid_ui: {
+          paid_dttm: $("paid-datetime").value,
+          method: $("paid-method").value,
+          ref: $("paid-ref").value
+        }
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
     }
@@ -949,13 +1089,17 @@
         $("client-email").value = d.customer?.email || "";
         $("client-address").value = d.customer?.address || "";
 
-        $("invoice-number").value = d.invoice_no || $("invoice-number").value;
-        $("due-date").value = d.due_date || $("due-date").value;
+        if (d.invoice_no) $("invoice-number").value = d.invoice_no;
+        if (d.due_date) $("due-date").value = d.due_date;
 
         $("programme").value = d.programme || "lessons";
         $("travel-fee").value = d.travel_fee || "0";
         $("deposit-amount").value = d.deposit_amount || "0";
         $("notes").value = d.notes || "";
+
+        $("paid-datetime").value = d.paid_ui?.paid_dttm || "";
+        $("paid-method").value = d.paid_ui?.method || "Bank Transfer";
+        $("paid-ref").value = d.paid_ui?.ref || "";
 
         $("item-list").innerHTML = "";
         (d.items || []).forEach(it => addItem(it.desc, it.date, it.time, it.qty, it.unit));
@@ -963,6 +1107,7 @@
 
         syncProgrammeUI(false);
         calculateTotal();
+        setStatusChip();
         return true;
       } catch {
         return false;
@@ -978,12 +1123,11 @@
 
     function printMode(mode) {
       document.body.setAttribute("data-print-mode", mode);
-      if (mode === "receipt") populateReceiptDocument();
-      setTimeout(() => window.print(), 50);
+      if (mode === "receipt") populateReceiptDocument(lastLoadedInvoice);
+      setTimeout(() => window.print(), 60);
     }
 
     async function markPaid() {
-      // Always save first (so DB has latest totals/items)
       await saveInvoiceToCloud(true);
       if (!currentInvoiceId) throw new Error("Invoice not saved");
 
@@ -994,16 +1138,17 @@
       });
 
       $("paid-stamp").classList.add("show");
-      toast(res.emailed ? "Marked paid + receipt emailed ✅" : "Marked paid ✅ (email not sent)");
-
-      // Reload from DB to show receipt_no etc
+      toast(res.emailed ? "Confirm + receipt emailed ✅" : "Marked paid ✅ (email not sent)");
       await loadInvoiceFromCloud(currentInvoiceId);
+      setStatusChip();
     }
 
     async function markUnpaid() {
       if (!currentInvoiceId) { alert("Load or save an invoice first."); return; }
       await api(`/api/invoices/${currentInvoiceId}/mark-unpaid`, { method: "POST", body: "{}" });
       $("paid-stamp").classList.remove("show");
+      lastLoadedInvoice = { ...(lastLoadedInvoice || {}), paid_at: null, paid_method: null, paid_ref: null };
+      setStatusChip();
       toast("Marked unpaid");
     }
 
@@ -1013,21 +1158,193 @@
       toast(res.emailed ? "Receipt sent ✅" : "Receipt not sent (check email config)");
     }
 
-    // Wire UI
-    document.addEventListener("click", (e) => {
-      // Click outside add-menu
-      const menu = $("add-menu");
-      const btn = $("add-item-btn");
-      if (!menu.contains(e.target) && !btn.contains(e.target)) hideAddMenu();
-    });
+    /* ==========================
+       EXPORT / IMPORT
+    ========================== */
+    function downloadBlob(filename, mime, content) {
+      const blob = new Blob([content], { type: mime });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 500);
+    }
 
-    window.addEventListener("load", async () => {
+    function toCSV(rows, columns) {
+      const esc = (v) => {
+        const s = String(v ?? "");
+        const needs = /[",\n]/.test(s);
+        const out = s.replace(/"/g, '""');
+        return needs ? `"${out}"` : out;
+      };
+
+      const header = columns.map(c => esc(c.label)).join(",");
+      const lines = rows.map(r => columns.map(c => esc(c.get(r))).join(","));
+      return [header, ...lines].join("\n");
+    }
+
+    async function exportAllInvoicesCSV() {
+      // Uses /api/invoices list (fast + reliable). Adjust limit if you need more.
+      const data = await api("/api/invoices?limit=1000");
+      const rows = data.invoices || [];
+
+      const cols = [
+        { label: "id", get: r => r.id },
+        { label: "invoice_no", get: r => r.invoice_no },
+        { label: "customer_name", get: r => r.customer_name || "" },
+        { label: "customer_email", get: r => r.customer_email || "" },
+        { label: "programme", get: r => r.programme || "" },
+        { label: "due_date", get: r => r.due_date || "" },
+        { label: "subtotal", get: r => r.subtotal ?? "" },
+        { label: "travel_fee", get: r => r.travel_fee ?? "" },
+        { label: "deposit_amount", get: r => r.deposit_amount ?? "" },
+        { label: "total", get: r => r.total ?? "" },
+        { label: "paid_at", get: r => r.paid_at || "" },
+        { label: "paid_method", get: r => r.paid_method || "" },
+        { label: "paid_ref", get: r => r.paid_ref || "" },
+        { label: "receipt_no", get: r => r.receipt_no || "" },
+        { label: "emailed_receipt_at", get: r => r.emailed_receipt_at || "" },
+        { label: "issued_at", get: r => r.issued_at || "" }
+      ];
+
+      const csv = toCSV(rows, cols);
+      const ts = new Date().toISOString().slice(0, 10);
+      downloadBlob(`emm_invoices_${ts}.csv`, "text/csv;charset=utf-8", csv);
+      toast("Invoices CSV downloaded");
+    }
+
+    function exportCurrentInvoiceJSON() {
+      const customer = getCustomer();
+      const invoice_no = ($("invoice-number").value || "").trim();
+      const programme = $("programme").value;
+      const items = getItems();
+      const totals = getTotals();
+
+      const payload = {
+        exported_at: new Date().toISOString(),
+        app: "Elliot’s Mobile Music — Invoice Maker",
+        invoiceId: currentInvoiceId,
+        invoice_no,
+        programme,
+        due_date: $("due-date").value || null,
+        notes: ($("notes").value || "").trim(),
+        customer,
+        items,
+        totals,
+        paid_ui: {
+          paid_dttm: $("paid-datetime").value || null,
+          method: $("paid-method").value || null,
+          ref: ($("paid-ref").value || "").trim() || null
+        }
+      };
+
+      const safeInv = (invoice_no || "invoice").replace(/[^a-zA-Z0-9_\-]/g, "_");
+      downloadBlob(`invoice_${safeInv}.json`, "application/json;charset=utf-8", JSON.stringify(payload, null, 2));
+      toast("Current invoice JSON downloaded");
+    }
+
+    async function importInvoiceJSON(file) {
+      const text = await file.text();
+      let parsed;
+      try { parsed = JSON.parse(text); } catch { alert("Invalid JSON file."); return; }
+
+      const p = parsed || {};
+      const cust = p.customer || {};
+      const items = p.items || [];
+
+      $("client-name").value = cust.name || "";
+      $("client-email").value = cust.email || "";
+      $("client-address").value = cust.address || "";
+
+      $("invoice-number").value = p.invoice_no || $("invoice-number").value;
+      $("programme").value = p.programme || "lessons";
+      $("due-date").value = p.due_date || "";
+      $("notes").value = p.notes || "";
+
+      $("travel-fee").value = Number(p.totals?.travel_fee ?? 0).toFixed(2);
+      $("deposit-amount").value = Number(p.totals?.deposit_amount ?? 0).toFixed(2);
+
+      $("item-list").innerHTML = "";
+      items.forEach(it => addItem(it.desc || "Standard Lesson (60 Mins)", it.date || "", it.time || "", it.qty || 1, it.unit));
+      if (items.length === 0) addItem();
+
+      // Imported invoices are treated as draft (not paid) until you mark paid again.
+      currentInvoiceId = null;
+      lastLoadedInvoice = null;
+      $("paid-stamp").classList.remove("show");
+      $("paid-datetime").value = "";
+      $("paid-method").value = "Bank Transfer";
+      $("paid-ref").value = "";
+
+      syncProgrammeUI(false);
+      calculateTotal();
+      setStatusChip();
+      autosaveSoon();
+
+      toast("Imported into form (draft)");
+    }
+
+    /* ==========================
+       RESET / NEW
+    ========================== */
+    function makeNewInvoice() {
+      currentInvoiceId = null;
+      lastLoadedInvoice = null;
+      $("paid-stamp").classList.remove("show");
+
+      $("client-name").value = "";
+      $("client-email").value = "";
+      $("client-address").value = "";
+
+      // Keep due date today
       const today = new Date().toISOString().split("T")[0];
       $("due-date").value = today;
 
+      $("programme").value = "lessons";
+      $("travel-fee").value = "0";
+      $("deposit-amount").value = "0";
+      $("notes").value = "";
+
+      $("paid-datetime").value = "";
+      $("paid-method").value = "Bank Transfer";
+      $("paid-ref").value = "";
+
+      $("item-list").innerHTML = "";
+      addItem();
+
+      // New invoice number
+      $("invoice-number").value = "EW-" + Math.floor(10000 + Math.random() * 90000);
+
+      syncProgrammeUI(false);
+      calculateTotal();
+      setStatusChip();
+      autosaveSoon();
+
+      toast("New invoice ready");
+      setViewMode("invoice");
+    }
+
+    // Global: click outside add-menu
+    document.addEventListener("click", (e) => {
+      const menu = $("add-menu");
+      const btn = $("add-item-btn");
+      if (menu && btn && !menu.contains(e.target) && !btn.contains(e.target)) hideAddMenu();
+    });
+
+    window.addEventListener("load", async () => {
+      // Date line
       $("invoice-date").textContent =
         new Date().toLocaleDateString("en-GB", { year: "numeric", month: "long", day: "numeric" });
 
+      // Default due date only if empty
+      if (!$("due-date").value) {
+        $("due-date").value = new Date().toISOString().split("T")[0];
+      }
+
+      // Default invoice number only if empty
       if (!$("invoice-number").value) {
         $("invoice-number").value = "EW-" + Math.floor(10000 + Math.random() * 90000);
       }
@@ -1035,17 +1352,20 @@
       populateBlockLessonTypes();
       updateBlockPreview();
 
-      // Load draft first
       const hadDraft = loadDraft();
       if (!hadDraft) addItem();
 
-      // Programme UI
       syncProgrammeUI(false);
 
-      // Try preload lists
       try { await refreshLists(); } catch {}
 
-      // Hook events
+      // View buttons
+      $("btn-view-invoice").addEventListener("click", () => setViewMode("invoice"));
+      $("btn-view-receipt").addEventListener("click", () => setViewMode("receipt"));
+      $("btn-receipt-back").addEventListener("click", () => setViewMode("invoice"));
+      $("btn-print-receipt-2").addEventListener("click", () => { setDynamicFilename("RECEIPT"); printMode("receipt"); });
+
+      // Add items
       $("add-item-btn").addEventListener("click", toggleAddMenu);
       $("btn-add-single").addEventListener("click", () => { addItem(); hideAddMenu(); });
 
@@ -1054,6 +1374,7 @@
       });
       $("btn-generate-block").addEventListener("click", generateBlock);
 
+      // Programme/totals
       $("programme").addEventListener("change", () => syncProgrammeUI(true));
       $("travel-fee").addEventListener("input", () => { calculateTotal(); autosaveSoon(); });
       $("deposit-amount").addEventListener("input", () => { calculateTotal(); autosaveSoon(); });
@@ -1063,14 +1384,15 @@
         $(id).addEventListener("change", autosaveSoon);
       });
 
-      $("btn-save-cloud").addEventListener("click", () => saveInvoiceToCloud(false));
-      $("btn-refresh").addEventListener("click", refreshLists);
-      $("btn-save-customer").addEventListener("click", saveCustomerToCloud);
+      // Cloud
+      $("btn-save-cloud").addEventListener("click", () => saveInvoiceToCloud(false).catch(err => alert(err.message)));
+      $("btn-refresh").addEventListener("click", () => refreshLists().catch(() => {}));
+      $("btn-save-customer").addEventListener("click", () => saveCustomerToCloud().catch(err => alert(err.message)));
 
+      // Customer picker
       $("customer-picker").addEventListener("change", (e) => {
         const opt = e.target.selectedOptions[0];
         if (!opt || !opt.value) return;
-        // Load into fields (no DB call needed)
         $("client-name").value = opt.textContent.split(" — ")[0] || "";
         $("client-email").value = opt.dataset.email || "";
         $("client-address").value = opt.dataset.address || "";
@@ -1078,18 +1400,44 @@
         toast("Customer loaded into form");
       });
 
+      // Invoice picker
       $("invoice-picker").addEventListener("change", async (e) => {
         const id = e.target.value;
         if (!id) return;
         await loadInvoiceFromCloud(id);
+        setViewMode("invoice");
       });
 
+      // Payment actions
       $("btn-mark-paid").addEventListener("click", () => markPaid().catch(err => alert(err.message)));
       $("btn-mark-unpaid").addEventListener("click", () => markUnpaid().catch(err => alert(err.message)));
       $("btn-email-receipt").addEventListener("click", () => resendReceipt().catch(err => alert(err.message)));
 
+      // Print
       $("btn-print-invoice").addEventListener("click", () => { setDynamicFilename("INVOICE"); printMode("invoice"); });
       $("btn-print-receipt").addEventListener("click", () => { setDynamicFilename("RECEIPT"); printMode("receipt"); });
+
+      // New / clear
+      $("btn-new-invoice").addEventListener("click", makeNewInvoice);
+      $("btn-clear-customer").addEventListener("click", () => {
+        $("client-name").value = "";
+        $("client-email").value = "";
+        $("client-address").value = "";
+        autosaveSoon();
+        toast("Customer cleared");
+      });
+
+      // Export / Import
+      $("btn-export-invoices-csv").addEventListener("click", () => exportAllInvoicesCSV().catch(err => alert(err.message)));
+      $("btn-export-current-json").addEventListener("click", exportCurrentInvoiceJSON);
+      $("import-json").addEventListener("change", async (e) => {
+        const file = e.target.files && e.target.files[0];
+        e.target.value = "";
+        if (!file) return;
+        await importInvoiceJSON(file);
+      });
+
+      setStatusChip();
     });
   </script>
 </body>

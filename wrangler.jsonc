@@ -7,5 +7,12 @@
     "directory": "./public",
     "binding": "ASSETS",
     "not_found_handling": "single-page-application"
-  }
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "emm_invoices",
+      "database_id": "PASTE_YOUR_DATABASE_ID_HERE"
+    }
+  ]
 }
